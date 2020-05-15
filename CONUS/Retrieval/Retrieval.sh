@@ -15,12 +15,12 @@
 
 # Print this sub-job's task ID
 echo "GRID: " $SLURM_ARRAY_TASK_ID >> Retrieval.out
-python Retrieval.py 0
-python Retrieval.py 1
-python Retrieval.py 2
-python Retrieval.py 3
-python Retrieval.py 4
-python Retrieval.py 5
-python Retrieval.py 6
+python Retrieval.py 7
+python Retrieval.py 8
+python Retrieval.py 9
+python Retrieval.py 10
+python Retrieval.py 11
+python Retrieval.py 12
+python Retrieval.py 13
 
 

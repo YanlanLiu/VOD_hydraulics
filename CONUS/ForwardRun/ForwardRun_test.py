@@ -11,6 +11,7 @@ import os
 import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
+import sys; sys.path.append("../Utilities/")
 from newfun_full import readCLM
 from newfun_full import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun_full import OB,CONST,CLAPP,ca
@@ -28,17 +29,17 @@ nsites_per_id = 100
 warmup, nsample = (0.8,100)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 2913
+#arrayid = 83
 #nsites_per_id = 1
 #warmup, nsample = (0.8,2)
 
-versionpath = parentpath + 'Retrieval_0504/'
+versionpath = parentpath + 'Retrieval_0510/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath +'Output/'
 forwardpath = versionpath+'Forward_test/'
 
 MODE = 'AM_PM_ET'
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
 
 for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):

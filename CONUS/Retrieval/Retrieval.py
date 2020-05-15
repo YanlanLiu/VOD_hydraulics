@@ -11,20 +11,21 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 import warnings; warnings.simplefilter("ignore")
+import time
+import sys; sys.path.append("../Utilities/")
 from newfun import readCLM, fitVOD_RMSE, AMIS
 from newfun import varnames,scale,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca
 from Utilities import MovAvg
 # np.random.seed(seed=123)
-import time
-import sys
+
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
 samplenum = (8,2000)
 
-#arrayid = 1 # 0-5, 10-15, 20-25, 30-35
+#arrayid = 10000 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (1,10) # number of chuncks, number of samples per chunck
 
 
@@ -39,7 +40,7 @@ chains_per_site = 1
 
 fid = int(arrayid/chains_per_site)
 chainid = int(arrayid-fid*chains_per_site)
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)

@@ -11,6 +11,7 @@ import os
 import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
+import sys; sys.path.append("../Utilities/")
 from newfun import readCLM
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca
@@ -33,13 +34,13 @@ warmup, nsample = (0.8,100)
 #nsites_per_id = 1
 #warmup, nsample = (0.8,2)
 
-versionpath = parentpath + 'Retrieval_0501/'
+versionpath = parentpath + 'Retrieval_0510/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath +'Output/'
 forwardpath = versionpath+'Forward/'
 
 MODE = 'AM_PM_ET'
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
 
 for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
@@ -212,8 +213,8 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         PSIL_hat,ET_hat = runhh_2soil_hydro(theta)
         ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
         dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
-        #VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)        
-        VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD,return_popt=True)      
+        #VOD_hat = fitVOD_RMSE(dPSIL,dLAI,iVOD_ma)        
+        VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True)      
         SVOD = np.concatenate([SVOD,VOD_hat])
         SET = np.concatenate([SET,ET_hat])
         SPSIL = np.concatenate([SPSIL,PSIL_hat])

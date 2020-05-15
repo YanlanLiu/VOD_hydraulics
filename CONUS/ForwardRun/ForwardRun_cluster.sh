@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH --job-name=fw
-#SBATCH --output=JobInfo_fwd/%x_%a.out
-#SBATCH --error=JobInfo_fwd/%x_%a.err
-#SBATCH --array=0-140
+#SBATCH --output=JobInfo/%x_%a.out
+#SBATCH --error=JobInfo/%x_%a.err
+#SBATCH --array=0-70
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
 #SBATCH --time=1:00:00
