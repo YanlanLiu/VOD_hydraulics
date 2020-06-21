@@ -9,6 +9,7 @@ Created on Sat May  2 22:25:39 2020
 import os
 import numpy as np
 import pandas as pd
+import sys; sys.path.append("../Utilities/")
 import glob
 from newfun import GetTrace
 import pickle
@@ -20,15 +21,15 @@ nsites_per_id = 1000
 
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 0
-#nsites_per_id = 10
+#arrayid = 1
+#nsites_per_id = 1
 
 versionpath = parentpath + 'Retrieval_0510/'
 outpath = versionpath+'Output/'
 traitpath = versionpath+'Traits/'
 varlist = ['g1','lpx','psi50X','gpmax','C','bexp','bc']
 
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 MODE = 'AM_PM_ET_'
 
 MissingList = []
@@ -47,6 +48,7 @@ for i,fid in enumerate(range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id)):
     else:
         trace_df = GetTrace(PREFIX,0,optimal=False)
         var_df = trace_df[trace_df['step']>trace_df['step'].max()*0.8]
+        var_df['lpx'] = var_df['lpx']*var_df['psi50X']
         Val_25[i,:] = np.array([var_df[itm].quantile(.25) for itm in varlist])
         Val_50[i,:] = np.array([var_df[itm].quantile(.50) for itm in varlist])
         Val_75[i,:] = np.array([var_df[itm].quantile(.75) for itm in varlist])

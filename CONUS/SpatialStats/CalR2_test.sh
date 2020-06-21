@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH --job-name=r2t
-#SBATCH --output=JobInfo_fwd/%x_%a.out
-#SBATCH --error=JobInfo_fwd/%x_%a.err
-#SBATCH --array=0-14
+#SBATCH --output=JobInfo/%x_%a.out
+#SBATCH --error=JobInfo/%x_%a.err
+#SBATCH --array=0-13
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
 #SBATCH --time=0:15:00

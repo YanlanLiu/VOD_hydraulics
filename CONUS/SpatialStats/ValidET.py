@@ -10,8 +10,8 @@ import os
 import numpy as np
 import pandas as pd
 import glob
+import sys; sys.path.append("../Utilities/")
 from newfun import readCLM
-# from Utilities import MovAvg
 import pickle
 import time
 
@@ -27,7 +27,7 @@ inputpath = parentpath+'Input/'
 n_path = inputpath+'ValidN/'
 
 inpath = parentpath+'Input/'
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 MODE = 'AM_PM_ET_'
 
 validN = np.zeros([len(SiteInfo),2])

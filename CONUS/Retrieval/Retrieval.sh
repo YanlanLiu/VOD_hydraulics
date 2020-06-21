@@ -5,7 +5,7 @@
 #SBATCH --error=JobInfo/%x_%a.err
 #SBATCH --array=0-999
 #SBATCH --ntasks=1
-#SBATCH -p konings,owners,normal
+#SBATCH -p owners,normal
 #SBATCH --time=12:00:00
 #SBATCH --mem-per-cpu=2000
 

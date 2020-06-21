@@ -3,7 +3,7 @@
 #SBATCH --job-name=fw
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
-#SBATCH --array=0-70
+#SBATCH --array=70-140
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
 #SBATCH --time=1:00:00

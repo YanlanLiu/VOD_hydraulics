@@ -10,19 +10,19 @@ import os
 import numpy as np
 import pandas as pd
 import glob
-from newfun import GetTrace
 import pickle
 import time
 import sys; sys.path.append("../Utilities/")
+from newfun import GetTrace
 
-# parentpath = '/scratch/users/yanlan/' 
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-# nsites_per_id = 1000
+parentpath = '/scratch/users/yanlan/' 
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+nsites_per_id = 1000
 
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 0
-nsites_per_id = 10
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 0
+#nsites_per_id = 10
 
 versionpath = parentpath + 'Retrieval_0510/'
 outpath = versionpath+'Output/'
