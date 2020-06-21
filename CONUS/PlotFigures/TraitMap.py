@@ -11,15 +11,19 @@ import pickle
 import numpy as np
 import pandas as pd
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.75)
-
+import os; os.environ['PROJ_LIB'] = '/Users/yanlan/opt/anaconda3/pkgs/proj4-5.2.0-h0a44026_1/share/proj/'
+from mpl_toolkits.basemap import Basemap
+import sys; sys.path.append("../Utilities/")
+from Utilities import LatLon
+from scipy.stats import norm,gamma
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-versionpath = parentpath + 'Retrieval_0501/'
+versionpath = parentpath + 'Retrieval_0510/'
 outpath = versionpath+'Output/'
 
 traitpath = versionpath+'Traits/'
 r2path = versionpath+'R2_test/'
 npath = parentpath+'Input/ValidN/'
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
 varlist = ['g1','lpx','psi50X','gpmax','C','bexp','bc']
 
@@ -28,6 +32,7 @@ MODE = 'AM_PM_ET_'
 #%%
 V50 = np.zeros([0,len(varlist)]); 
 V25 = np.copy(V50); V75 = np.copy(V50)
+HSM = np.zeros([0,3])
 ML = np.zeros([0,])
     
 R2 = np.zeros([0,2])
@@ -35,13 +40,16 @@ ValidN = np.zeros([len(SiteInfo),2])
 for arrayid in range(14):
     print(arrayid)
     traitname = traitpath+'Traits_'+str(arrayid)+'_1E3.pkl'
-
+    hsmname = traitpath+'HSM_'+str(arrayid)+'_1E3.pkl'
     with open(traitname, 'rb') as f: 
         Val_25, Val_50, Val_75, MissingList = pickle.load(f)
+    with open(hsmname, 'rb') as f: 
+       hsm = pickle.load(f)
     V25 = np.concatenate([V25,Val_25],axis=0)
     V50 = np.concatenate([V50,Val_50],axis=0)
     V75 = np.concatenate([V75,Val_75],axis=0)
     ML = np.concatenate([ML,MissingList])
+    HSM = np.concatenate([HSM,np.transpose(np.array([np.nanpercentile(hsm,pct,axis=1) for pct in [25,50,75]]))],axis=0)
     
     nname = npath+'N_'+str(arrayid)+'_1E3.pkl.npy'
     vn = np.load(nname)
@@ -62,98 +70,410 @@ Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
 VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
 
 df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
+# df = pd.concat([SiteInfo,Trait,VN],axis=1)
 
+# c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+# df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>50) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
+df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
+df = df[df['obsfilter']==1]
+# plt.hist(df['N_VOD'])
 #%%
-varname = 'Soil texture'
+# df['lcfilter'] = ((df['IGBP']==16))*1# to be removed
+# df['obsfilter'] = (df['N_VOD']>500)*(df['N_ET']>50)*1 # to be used
+
+# df['obsfilter'][(df['N_ET']<70)*np.array([(igbp in [7,10]) for igbp in df['IGBP']])] = 0
+# # plt.hist(df['N_VOD'])
+# df = df[(df['lcfilter']==0)*(df['obsfilter']==1)]*1
+# df = df[(df['lcfilter']==0)]*1
+# df = df[df['obsfilter']==1]
+
+# df['obsfilter'] = (df['N_VOD']>50)*(df['N_ET']>10)*1 # to be used
+# df['lcfilter'] =((df['C4frac']>50) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
+
+# df = df[(df['lcfilter']==0)*(df['obsfilter']==1)]*1
+# df = df[(df['obsfilter']==1)]*1
+
+
+
+# #%%
+# df['empty'] = df['g1'].isna()*1
+# tmpdf = df.groupby('row').agg('mean')['empty']
+# print(tmpdf[tmpdf>0.8])
+
+
+varname = 'R2_ET'
+# varname='IGBP'
+# if df[varname].mean()>0:df[varname] = -df[varname]
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
 heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
-plt.figure(figsize=(13.5,5))
-# plt.imshow(heatmap1_data,cmap='Greens'); plt.colorbar();plt.xticks([]);plt.yticks([])
-plt.imshow(heatmap1_data,cmap='summer_r');
-plt.clim([0,10]);plt.colorbar()
-plt.title(varname)
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=0,vmax=1,shading='quad')
+cbar = m.colorbar(cs)
+cbar.set_label(varname,rotation=360,labelpad=15)
+plt.show()
+
 
 #%%
-BB = np.array([4.05,4.38,4.90,5.3,5.39,7.12,7.75,8.52,10.4,10.4,11.4])
-CH_bexp = [BB[int(tx)] for tx in np.array(SiteInfo['Soil texture'])]
-def Saxton(pct): # pct -- [%sand, %silt, %clay]; th -- volumetric soil moisture
-    S,C = (pct[0],pct[2])
-    e = -3.140
-    f = -2.22e-3
-    g = -3.484e-5
-    B = e+f*C**2+g*S**2+g*S**2*C
-    return B
+trb_df = df[df['R2_ET']<0]
+len(trb_df)/len(df)
+trb_df.to_csv('trb_list.csv')
+#%%
+c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>13))*1# to be removed
 
-SS = list(np.array(df[['T_SAND','T_SILT','T_CLAY']]))
-S_bexp = [-Saxton(pct) for pct in SS]
+subset = df[(df['IGBP'].isin([1,4,6,7,8,10]))*(df['lcfilter']==0)]
+# subset = df[(df['IGBP'].isin([1,4,7,8,10]))*(df['lcfilter']==0)]
+
+IGBPlist = ['NA','ENF','EBF','DNF','DBF','DBF','Shrubland','Shrubland',
+            'Savannas','Savannas','Grassland','Wetland','Cropland']
+
+IGBP_str = [IGBPlist[itm] for itm in np.array(subset['IGBP'])]
+subset['IGBP_str'] = IGBP_str
+# subset  = subset[subset['R2_ET']>-1]
+
+IGBP_list = subset['IGBP_str'].unique()
+median_list = subset.groupby('IGBP_str').agg('median')[varname]
+lin_list = np.array([3.97,2.35,4.5,5.76,4.22])
+IGBP_list_sorted = ['ENF','DBF','Shrubland','Grassland','Savannas']
+
+median_array = np.zeros([len(subset),])
+lin_array = np.zeros([len(subset),])
+for i,igbp in enumerate(list(median_list.index)):
+    median_array[subset['IGBP_str']==igbp] = median_list[igbp]
+    lin_array[subset['IGBP_str']==igbp] = lin_list[i]
+subset['median_array'] = median_array    
+subset['lin_array'] = lin_array    
+
+
+plt.figure(figsize=(11,5.2))
+ax1 = plt.subplot(111)
+pal = sns.cubehelix_palette(rot=-.63,reverse=False)
+plt.bar(0,.1,color='w',edgecolor='k',label='Retrieved median')
+sns.barplot(x='IGBP_str',y=varname,ci=None,data=subset.sort_values(by=['lin_array'],ascending=True),
+            estimator=np.median,palette = pal,edgecolor='k')
+
+for i,itm in enumerate(IGBP_list_sorted):
+    if i==0:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k',label='Mid-50% range')
+
+    else:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k')
+
+plt.xlabel('')
+plt.ylabel(varname,rotation=360,labelpad=20)
+handles, labels = ax1.get_legend_handles_labels()
+plt.legend(handles[::-1], labels[::-1],loc=2,ncol=2)
+plt.ylim([0,.8])
+
+
+
 
 #%%
-plt.plot(df['bexp'],S_bexp,'ok')
-plt.ylabel('HWSD, Saxton et al.')
-plt.xlabel('Retrieved')
+varname = 'lpx'
+# varname='IGBP'
+Trait = pd.DataFrame(V50,columns=varlist)
+Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
+VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
+
+df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
+df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
+df['lcfilter'] =((df['IGBP']==10))*1# to be removed
+# df = df[(df['lcfilter']==0)*(df['obsfilter']==1)]*1
+df = df[(df['obsfilter']==1)]*1
+
+if df[varname].mean()>0:df[varname] = -df[varname]
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
+heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True,reverse=True)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=-15,vmax=0,shading='quad')
+cbar = m.colorbar(cs)
+cbar.set_label(varname,rotation=360,labelpad=15)
+plt.show()
+
+
+c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>13))*1# to be removed
+
+subset = df[(df['IGBP'].isin([1,4,6,7,8,10]))*(df['lcfilter']==0)]
+# subset = df[(df['IGBP'].isin([1,4,7,8,10]))*(df['lcfilter']==0)]
+
+IGBPlist = ['NA','ENF','EBF','DNF','DBF','DBF','Shrubland','Shrubland',
+            'Savannas','Savannas','Grassland','Wetland','Cropland']
+
+IGBP_str = [IGBPlist[itm] for itm in np.array(subset['IGBP'])]
+subset['IGBP_str'] = IGBP_str
+# subset  = subset[subset['R2_ET']>-1]
+
+IGBP_list = subset['IGBP_str'].unique()
+median_list = subset.groupby('IGBP_str').agg('median')[varname]
+lin_list = np.array([3.97,2.35,4.5,5.76,4.22])
+IGBP_list_sorted = ['ENF','DBF','Shrubland','Grassland','Savannas']
+
+median_array = np.zeros([len(subset),])
+lin_array = np.zeros([len(subset),])
+for i,igbp in enumerate(list(median_list.index)):
+    median_array[subset['IGBP_str']==igbp] = median_list[igbp]
+    lin_array[subset['IGBP_str']==igbp] = lin_list[i]
+subset['median_array'] = median_array    
+subset['lin_array'] = lin_array    
+
+
+plt.figure(figsize=(11,5.2))
+ax1 = plt.subplot(111)
+pal = sns.cubehelix_palette(rot=-.63,reverse=False)
+plt.bar(0,-.1,color='w',edgecolor='k',label='Retrieved median')
+sns.barplot(x='IGBP_str',y=varname,ci=None,data=subset.sort_values(by=['lin_array'],ascending=True),
+            estimator=np.median,palette = pal,edgecolor='k')
+
+for i,itm in enumerate(IGBP_list_sorted):
+    if i==0:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k',label='Mid-50% range')
+
+    else:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k')
+
+plt.xlabel('')
+plt.ylabel(varname,rotation=360,labelpad=20)
+handles, labels = ax1.get_legend_handles_labels()
+plt.legend(handles[::-1], labels[::-1],loc=3,ncol=2)
+# plt.ylim([0,1.1])
+
+#%%
+varname = 'gpmax'
+# varname='IGBP'
+Trait = pd.DataFrame(V50,columns=varlist)
+Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
+VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
+
+df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
+df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
+df['lcfilter'] =((df['IGBP']==10))*1# to be removed
+df = df[(df['lcfilter']==0)*(df['obsfilter']==1)]*1
+# df = df[(df['obsfilter']==1)]*1
+
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
+heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True,reverse=False)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=0,vmax=10,shading='quad')
+cbar = m.colorbar(cs)
+cbar.set_label(varname,rotation=360,labelpad=15)
+plt.show()
+
+
+c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>13))*1# to be removed
+
+subset = df[(df['IGBP'].isin([1,4,6,7,8,10]))*(df['lcfilter']==0)]
+# subset = df[(df['IGBP'].isin([1,4,7,8,10]))*(df['lcfilter']==0)]
+
+IGBPlist = ['NA','ENF','EBF','DNF','DBF','DBF','Shrubland','Shrubland',
+            'Savannas','Savannas','Grassland','Wetland','Cropland']
+
+IGBP_str = [IGBPlist[itm] for itm in np.array(subset['IGBP'])]
+subset['IGBP_str'] = IGBP_str
+# subset  = subset[subset['R2_ET']>-1]
+
+IGBP_list = subset['IGBP_str'].unique()
+median_list = subset.groupby('IGBP_str').agg('median')[varname]
+lin_list = np.array([3.97,2.35,4.5,5.76,4.22])
+IGBP_list_sorted = ['ENF','DBF','Shrubland','Grassland','Savannas']
+
+median_array = np.zeros([len(subset),])
+lin_array = np.zeros([len(subset),])
+for i,igbp in enumerate(list(median_list.index)):
+    median_array[subset['IGBP_str']==igbp] = median_list[igbp]
+    lin_array[subset['IGBP_str']==igbp] = lin_list[i]
+subset['median_array'] = median_array    
+subset['lin_array'] = lin_array    
+
+
+plt.figure(figsize=(11,5.2))
+ax1 = plt.subplot(111)
+pal = sns.cubehelix_palette(rot=-.63,reverse=False)
+plt.bar(0,.1,color='w',edgecolor='k',label='Retrieved median')
+sns.barplot(x='IGBP_str',y=varname,ci=None,data=subset.sort_values(by=['lin_array'],ascending=True),
+            estimator=np.median,palette = pal,edgecolor='k')
+
+for i,itm in enumerate(IGBP_list_sorted):
+    if i==0:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k',label='Mid-50% range')
+
+    else:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k')
+
+plt.xlabel('')
+plt.ylabel(varname,rotation=360,labelpad=20)
+handles, labels = ax1.get_legend_handles_labels()
+plt.legend(handles[::-1], labels[::-1],loc=1,ncol=2)
+# plt.ylim([0,1.1])
+
+#%%
+varname = 'HSM75'
+# varname='IGBP'
+Trait = pd.DataFrame(V50,columns=varlist)
+Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
+VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
+HSM = pd.DataFrame(HSM,columns=['HSM25','HSM50','HSM75'])
+df = pd.concat([SiteInfo,Trait,Acc,VN,HSM],axis=1)
+df['dHSM'] = df['HSM75']-df['HSM25']
+df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
+df['lcfilter'] =((df['IGBP']==10))*1# to be removed
+df = df[(df['lcfilter']==0)*(df['obsfilter']==1)]*1
+# df = df[(df['obsfilter']==1)]*1
+
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
+heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True,reverse=False)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=0,vmax=8,shading='quad')
+cbar = m.colorbar(cs)
+cbar.set_label(varname,rotation=360,labelpad=15)
+plt.show()
+
+
+c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>13))*1# to be removed
+
+subset = df[(df['IGBP'].isin([1,4,6,7,8,10]))*(df['lcfilter']==0)]
+# subset = df[(df['IGBP'].isin([1,4,7,8,10]))*(df['lcfilter']==0)]
+
+IGBPlist = ['NA','ENF','EBF','DNF','DBF','DBF','Shrubland','Shrubland',
+            'Savannas','Savannas','Grassland','Wetland','Cropland']
+
+IGBP_str = [IGBPlist[itm] for itm in np.array(subset['IGBP'])]
+subset['IGBP_str'] = IGBP_str
+# subset  = subset[subset['R2_ET']>-1]
+
+IGBP_list = subset['IGBP_str'].unique()
+median_list = subset.groupby('IGBP_str').agg('median')[varname]
+lin_list = np.array([3.97,2.35,4.5,5.76,4.22])
+IGBP_list_sorted = ['ENF','DBF','Shrubland','Grassland','Savannas']
+
+median_array = np.zeros([len(subset),])
+lin_array = np.zeros([len(subset),])
+for i,igbp in enumerate(list(median_list.index)):
+    median_array[subset['IGBP_str']==igbp] = median_list[igbp]
+    lin_array[subset['IGBP_str']==igbp] = lin_list[i]
+subset['median_array'] = median_array    
+subset['lin_array'] = lin_array    
+
+
+plt.figure(figsize=(11,5.2))
+ax1 = plt.subplot(111)
+pal = sns.cubehelix_palette(rot=-.63,reverse=False)
+plt.bar(0,.1,color='w',edgecolor='k',label='Retrieved median')
+sns.barplot(x='IGBP_str',y=varname,ci=None,data=subset.sort_values(by=['lin_array'],ascending=True),
+            estimator=np.median,palette = pal,edgecolor='k')
+
+for i,itm in enumerate(IGBP_list_sorted):
+    if i==0:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k',label='Mid-50% range')
+
+    else:
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k')
+
+plt.xlabel('')
+plt.ylabel(varname,rotation=360,labelpad=20)
+handles, labels = ax1.get_legend_handles_labels()
+plt.legend(handles[::-1], labels[::-1],loc=1,ncol=2)
+# plt.ylim([0,1.1]
+#%%
+# import basemap
+varname = 'g1'
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
+heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=0,vmax=9,shading='quad')
+cbar = m.colorbar(cs,ticks=[0,2,4,6,8])
+# cbar.set_label(r'$g_1$',rotation=360,labelpad=15)
+plt.show()
 
 #%%
 # df['R2_ET'][df['R2_ET']<0] = 0
-subset = df[df['IGBP'].isin([1,4,5,7,9,10])*(df['R2_VOD']>-1)]
+# subset = df[df['IGBP'].isin([1,4,6,7,8,10,12])*(df['R2_ET']>-0.5)*(df['R2_VOD']>-0.5)]
+c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
+
+subset = df[(df['IGBP'].isin([1,4,6,7]))*(df['lcfilter']==0)]
 
 IGBPlist = ['NA','ENF','EBF','DNF','DBF','DBF','Shrublands','Shrublands',
             'Savannas','Savannas','Grassland','Wetland','Cropland']
+
 IGBP_str = [IGBPlist[itm] for itm in np.array(subset['IGBP'])]
 subset['IGBP_str'] = IGBP_str
 
-plt.figure(figsize=(10,4))
-sns.violinplot(x='IGBP_str',y='R2_VOD',data=subset.sort_values(by=['IGBP']))
-plt.ylim([-0.25,0.8])
+IGBP_list = subset['IGBP_str'].unique()
+median_list = subset.groupby('IGBP_str').agg('median')['g1']
+lin_list = np.array([3.97,2.35,4.5])
 
+IGBP_list_sorted = np.array(median_list.index)[np.argsort(lin_list)]
+
+median_array = np.zeros([len(subset),])
+lin_array = np.zeros([len(subset),])
+for i,igbp in enumerate(list(median_list.index)):
+    median_array[subset['IGBP_str']==igbp] = median_list[igbp]
+    lin_array[subset['IGBP_str']==igbp] = lin_list[i]
+subset['median_array'] = median_array    
+subset['lin_array'] = lin_array
+
+
+plt.figure(figsize=(6,5))
+ax1 = plt.subplot(111)
+# pal = sns.cubehelix_palette(6, rot=-.5, dark=.3)
+pal = sns.cubehelix_palette(rot=-.63,reverse=False)
+
+plt.bar(0,1,color='w',edgecolor='k',label='Retrieved median')
+
+sns.barplot(x='IGBP_str',y='g1',ci=None,data=subset.sort_values(by=['lin_array'],ascending=True),
+            estimator=np.median,palette = pal,edgecolor='k')
+
+for i,itm in enumerate(IGBP_list_sorted):
+    if i==0:
+        plt.plot(i,np.sort(lin_list)[i],'^r',markersize=10,label='Estimates by Lin et al.')
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k',label='Mid-50% range')
+
+    else:
+        plt.plot(i,np.sort(lin_list)[i],'^r',markersize=10)
+        plt.plot([i,i],[subset[varname][subset['IGBP_str']==itm].quantile(.25),subset[varname][subset['IGBP_str']==itm].quantile(.75)],'-k')
+# sns.violinplot(x='IGBP_str',y='g1',data=subset.sort_values(by=['lin_array'],ascending=True),cut=cut,palette=pal,inner=None)
+# for i,itm in enumerate(IGBP_list_sorted):
+#     plt.plot(i,subset[varname][subset['IGBP_str']==itm].median(),'or')
+# plt.ylim(vlim+max(vlim)*np.array([-0.1,0.1]))
 plt.xlabel('')
-print(df['R2_VOD'].quantile(.25),df['R2_VOD'].quantile(.75))
-print(df['R2_ET'][df['R2_ET']>-1].quantile(.25),df['R2_ET'][df['R2_ET']>-1].quantile(.75))
+plt.ylabel(r'$g_1$',rotation=360,labelpad=20)
+handles, labels = ax1.get_legend_handles_labels()
+plt.legend(handles[::-1], labels[::-1],loc=2)
 
-#%%
-from scipy.stats import gaussian_kde
-x = np.array(df['C']); y = np.array(SiteInfo['LAI_50'])
-tmpfilter = ~np.isnan(x+y); x= x[tmpfilter]; y = y[tmpfilter]
-xy = np.vstack([x,y])
-z = gaussian_kde(xy)(xy)
+# plt.legend(handles[::-1], labels[::-1],loc=2,bbox_to_anchor=(0.0,1.4))
+# 
 
-plt.scatter(x,y,c=z)
-plt.xlabel('C')
-plt.ylabel('Annual median LAI')
-
-#%% Identify negative R2_ET
-
-idx = np.where((df['R2_ET']<0)*(df['R2_VOD']>0))[0]
-
-sitename = [str(SiteInfo['row'][i])+'_'+str(SiteInfo['col'][i]) for i in idx]
-
-sitename = sitename[1000]
-#%%
-from newfun import readCLM,GetTrace
-import os
-inpath = parentpath+'Input/'
-forwardpath = versionpath+'Forward/'
-Forcings,VOD,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
-forwardname = forwardpath+MODE+sitename+'.pkl'
-if os.path.isfile(forwardname):
-    with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
-        SVOD, SET, SPSIL = pickle.load(f)
-
-PREFIX = outpath+MODE+sitename+'_'
-trace = GetTrace(PREFIX,0,optimal=False)
-
-#%%
-plt.plot(ET,'or')
-plt.plot(np.min(SET,axis=0),color='lightblue')
-plt.plot(np.max(SET,axis=0),color='lightblue')
-plt.plot(np.mean(SET,axis=0),color='navy')
-plt.ylabel('ET')
-
-plt.figure()
-plt.plot(VOD,'or')
-plt.plot(np.min(SVOD,axis=0),color='lightblue')
-plt.plot(np.max(SVOD,axis=0),color='lightblue')
-plt.plot(np.mean(SVOD,axis=0),color='navy')
-plt.ylabel('VOD')
-
-#%%
-plt.figure()
-plt.plot(trace['sigma_vod'])
