@@ -10,21 +10,22 @@ import os
 import numpy as np
 import pandas as pd
 import glob
+import sys; sys.path.append("../Utilities/")
 from newfun import readCLM
-# from Utilities import MovAvg
+from Utilities import MovAvg
 import pickle
 import time
 
-parentpath = '/scratch/users/yanlan/' 
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
-nsites_per_id = 1000
+# parentpath = '/scratch/users/yanlan/' 
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
+# nsites_per_id = 1000
 
 
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 0
-#nsites_per_id = 100
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 83
+nsites_per_id = 1
 
-versionpath = parentpath + 'Retrieval_0501/'
+versionpath = parentpath + 'Retrieval_0510/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 #forwardpath = parentpath+'Forward_test/'
@@ -32,19 +33,25 @@ outpath = versionpath+'Output/'
 forwardpath = versionpath+'Forward/'
 r2path = versionpath+'R2/'
 
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 MODE = 'AM_PM_ET_'
 
 MissingList = []
 R2 = np.zeros([nsites_per_id,2])+np.nan
+RMSE = np.zeros([nsites_per_id,2])+np.nan
+corr = np.zeros([nsites_per_id,2])+np.nan
 
-
+def nancorr(yhat,y):
+    tmpfilter = ~np.isnan(yhat+y)
+    return np.corrcoef(yhat[tmpfilter],y[tmpfilter])[0,1]
+    
 def calmaxR2(SVOD,VOD):
     SST = np.nanmean((VOD-np.nanmean(VOD))**2)
-    # tmp = np.tile(VOD,[SVOD.shape[0],1])
-    R2 = max(1-np.nanmean((VOD-SVOD)**2,axis=1)/SST)
+    RMSE = np.sqrt(min(np.nanmean((VOD-SVOD)**2,axis=1)))
+    R2 = 1-RMSE**2/SST
     R2_m = 1-np.nanmean((VOD-np.nanmean(SVOD,axis=0))**2)/SST
-    return max(R2,R2_m)
+    corr = nancorr(np.nanmean(SVOD,axis=0),VOD)
+    return max(R2,R2_m),RMSE,corr
 #%%
 tic = time.perf_counter()
 for i,fid in enumerate(range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id)):
@@ -57,9 +64,11 @@ for i,fid in enumerate(range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id)):
     forwardname = forwardpath+MODE+sitename+'.pkl'
     if os.path.isfile(forwardname):
         with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
-            SVOD, SET, SPSIL = pickle.load(f)
-        #R2[i,:] = np.array([calmaxR2(SVOD,VOD_ma),calmaxR2(SET,ET)])
-        R2[i,:] = np.array([calmaxR2(SVOD,VOD),calmaxR2(SET,ET)])
+            SVOD, SET, SPSIL,SPOPT = pickle.load(f)
+        R2[i,0],RMSE[i,0],corr[i,0] = calmaxR2(SVOD,VOD_ma)
+        R2[i,1],RMSE[i,1],corr[i,1] = calmaxR2(SET,ET)
+        # R2[i,:] = np.array([calmaxR2(SVOD,VOD_ma),calmaxR2(SET,ET)])
+        #R2[i,:] = np.array([calmaxR2(SVOD,VOD),calmaxR2(SET,ET)])
     else:
         MissingList.append(fid)
         
@@ -69,4 +78,4 @@ print(f"Running time (1000 sites): {toc-tic:0.4f} seconds")
 #%%
 r2name = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
 with open(r2name, 'wb') as f: 
-    pickle.dump([R2, MissingList], f)
+    pickle.dump([R2, RMSE,corr,MissingList], f)
