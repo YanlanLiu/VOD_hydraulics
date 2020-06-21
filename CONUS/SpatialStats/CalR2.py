@@ -14,9 +14,15 @@ import time
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 83
 #nsites_per_id = 1
+=======
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 83
+nsites_per_id = 1
+>>>>>>> 0eb9435629b94bfcef5e52d947f15177b90aa985
 =======
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 arrayid = 83
@@ -78,6 +84,9 @@ r2name = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
 with open(r2name, 'wb') as f: 
     pickle.dump([R2, RMSE,corr,MissingList], f)
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0eb9435629b94bfcef5e52d947f15177b90aa985
 =======
 >>>>>>> 0eb9435629b94bfcef5e52d947f15177b90aa985
