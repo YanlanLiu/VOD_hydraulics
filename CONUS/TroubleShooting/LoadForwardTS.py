@@ -30,7 +30,8 @@ outpath = versionpath+'Output/'
 #forwardpath = parentpath+'Forward_test/'
 #r2path = parentpath+'R2_test/'
 forwardpath = versionpath+'Forward/'
-r2path = versionpath+'R2/'
+traitpath = versionpath+'Traits/'
+
 
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 MODE = 'AM_PM_ET_'
@@ -63,5 +64,12 @@ plt.plot(VOD,'-r')
 plt.plot(np.nanmean(SVOD,axis=0),'-',color='navy')
 
 # Next, calculate logliklihood of ET and VOD. See if VOD smashes ET. If so, play weith traits
+#%%
+traitname = traitpath+'Traits_'+str(arrayid)+'_1E3.pkl'
 
-# plt.plot(np.nanmin(SVOD,axis=0),'--',color='lightblue')
+with open(traitname, 'rb') as f: 
+    Val_25, Val_50, Val_75, MissingList = pickle.load(f)
+        
+#%%
+Val_50.shape
+
