@@ -8,14 +8,20 @@ from Utilities import MovAvg
 import pickle
 import time
 
-parentpath = '/scratch/users/yanlan/' 
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
-nsites_per_id = 1000
+# parentpath = '/scratch/users/yanlan/' 
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
+# nsites_per_id = 1000
 
 
+<<<<<<< HEAD
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 83
 #nsites_per_id = 1
+=======
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 83
+nsites_per_id = 1
+>>>>>>> 0eb9435629b94bfcef5e52d947f15177b90aa985
 
 versionpath = parentpath + 'Retrieval_0510/'
 inpath = parentpath+'Input/'
@@ -71,4 +77,7 @@ print(f"Running time (1000 sites): {toc-tic:0.4f} seconds")
 r2name = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
 with open(r2name, 'wb') as f: 
     pickle.dump([R2, RMSE,corr,MissingList], f)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0eb9435629b94bfcef5e52d947f15177b90aa985

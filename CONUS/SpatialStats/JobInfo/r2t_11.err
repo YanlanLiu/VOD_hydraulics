@@ -1,0 +1,39 @@
+../Utilities/Utilities.py:128: RuntimeWarning: invalid value encountered in greater
+  tmp[np.abs(tmp-np.nanmean(tmp))>2*np.nanstd(tmp)] = np.nan
+../Utilities/Utilities.py:136: RuntimeWarning: invalid value encountered in greater
+  tmp[np.abs(anomaly-np.nanmean(anomaly))>2*np.nanstd(anomaly)] = np.nan
+../Utilities/Utilities.py:88: RuntimeWarning: Mean of empty slice
+  mva[i] = np.nanmean(a[i-hw:i+hw])
+CalR2_test.py:52: RuntimeWarning: Mean of empty slice
+  R2_m = 1-np.nanmean((VOD-np.nanmean(SVOD,axis=0))**2)/SST
+CalR2_test.py:53: RuntimeWarning: Mean of empty slice
+  corr = nancorr(np.nanmean(SVOD,axis=0),VOD)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3103: RuntimeWarning: invalid value encountered in subtract
+  X -= avg[:, None]
+../Utilities/newfun_full.py:62: RuntimeWarning: divide by zero encountered in true_divide
+  GA = np.array(df['Qh_tavg'])/Cpmol/(np.array(df['AvgSurfT_inst'])-np.array(df['Tair_f_inst']))*0.02405  #mol/m2/s to m/s
+CalR2_test.py:50: RuntimeWarning: Mean of empty slice
+  RMSE = np.sqrt(min(np.nanmean((VOD-SVOD)**2,axis=1)))
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+CalR2_test.py:49: RuntimeWarning: Mean of empty slice
+  SST = np.nanmean((VOD-np.nanmean(VOD))**2)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:1128: RuntimeWarning: Mean of empty slice.
+  avg = a.mean(axis)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/core/_methods.py:73: RuntimeWarning: invalid value encountered in true_divide
+  ret, rcount, out=ret, casting='unsafe', subok=False)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3175: RuntimeWarning: Degrees of freedom <= 0 for slice
+  c = cov(x, y, rowvar)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3109: RuntimeWarning: divide by zero encountered in double_scalars
+  c *= 1. / np.float64(fact)
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3109: RuntimeWarning: invalid value encountered in multiply
+  c *= 1. / np.float64(fact)
+CalR2_test.py:50: RuntimeWarning: overflow encountered in square
+  RMSE = np.sqrt(min(np.nanmean((VOD-SVOD)**2,axis=1)))
+CalR2_test.py:52: RuntimeWarning: overflow encountered in square
+  R2_m = 1-np.nanmean((VOD-np.nanmean(SVOD,axis=0))**2)/SST
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/core/_methods.py:32: RuntimeWarning: invalid value encountered in reduce
+  return umr_sum(a, axis, dtype, out, keepdims)
+/var/spool/slurmd/job2743150/slurm_script: line 19: /home/users/yanlan: Is a directory
