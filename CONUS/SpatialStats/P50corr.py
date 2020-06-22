@@ -17,14 +17,14 @@ import sys; sys.path.append("../Utilities/")
 from newfun import LoadEnsemble
 from newfun import varnames
 
-# parentpath = '/scratch/users/yanlan/' 
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-# nsites_per_id = 1000
+parentpath = '/scratch/users/yanlan/' 
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+nsites_per_id = 1000
 
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 0
-nsites_per_id = 10
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 0
+#nsites_per_id = 10
 
 versionpath = parentpath + 'Retrieval_0510/'
 
