@@ -79,4 +79,4 @@ print(f"Running time (1000 sites): {toc-tic:0.4f} seconds")
 #%%
 r2name = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
 with open(r2name, 'wb') as f: 
-    pickle.dump([R2, MissingList], f)
+    pickle.dump([R2,RMSE,corr,MissingList], f)
