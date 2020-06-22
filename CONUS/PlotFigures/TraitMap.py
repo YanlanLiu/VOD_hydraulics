@@ -21,7 +21,7 @@ versionpath = parentpath + 'Retrieval_0510/'
 outpath = versionpath+'Output/'
 
 traitpath = versionpath+'Traits/'
-r2path = versionpath+'R2_test/'
+r2path = versionpath+'R2/'
 npath = parentpath+'Input/ValidN/'
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
@@ -36,6 +36,8 @@ HSM = np.zeros([0,3])
 ML = np.zeros([0,])
     
 R2 = np.zeros([0,2])
+RMSE = np.zeros([0,2])
+CORR = np.zeros([0,2])
 ValidN = np.zeros([len(SiteInfo),2])
 for arrayid in range(14):
     print(arrayid)
@@ -58,15 +60,17 @@ for arrayid in range(14):
     # plt.figure();plt.plot(vn[:,1])
     r2anme = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
     with open(r2anme, 'rb') as f: 
-        r2, MissingListR2 = pickle.load(f)
+        r2,rmse,corr, MissingListR2 = pickle.load(f)
     R2 = np.concatenate([R2,r2],axis=0)
+    RMSE = np.concatenate([RMSE,rmse],axis=0)
+    CORR = np.concatenate([CORR,corr],axis=0)
     
 #%%
 # SiteInfo = SiteInfo.iloc[0:len(V25)]
 # # Trait = pd.DataFrame((V75-V25)/V50,columns=varlist)
 
 Trait = pd.DataFrame(V50,columns=varlist)
-Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
+Acc = pd.DataFrame(np.column_stack([R2,RMSE,CORR]),columns=['R2_VOD','R2_ET','RMSE_VOD','RMSE_ET','r_VOD','r_ET'])
 VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
 
 df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
@@ -113,16 +117,25 @@ m.drawcoastlines()
 m.drawcountries()
 mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
 # mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
-cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=0,vmax=1,shading='quad')
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap=mycmap,vmin=-1,vmax=1,shading='quad')
 cbar = m.colorbar(cs)
 cbar.set_label(varname,rotation=360,labelpad=15)
 plt.show()
 
 
-#%%
+#%% Find the difference between the two data frames using histograms
 trb_df = df[df['R2_ET']<0]
+norm_df = df[df['R2_ET']>=0]
 len(trb_df)/len(df)
-trb_df.to_csv('trb_list.csv')
+
+varname = 'R2_VOD'
+plt.figure()
+plt.hist(norm_df[varname],bins=np.arange(-.2,1,0.1),alpha=0.5,density=True)
+plt.hist(trb_df[varname],bins=np.arange(-1,1,0.1),alpha=.5,density=True)
+plt.xlabel(varname)
+plt.xlim([-0.3,1])
+
+# trb_df.to_csv('trb_list.csv')
 #%%
 c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
 df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>30) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>13))*1# to be removed

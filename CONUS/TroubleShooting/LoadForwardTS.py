@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import glob
 import sys; sys.path.append("../Utilities/")
+import warnings; warnings.simplefilter("ignore")
 from newfun import readCLM
 from Utilities import MovAvg
 import pickle
@@ -45,41 +46,53 @@ A1 = trb[['row','col']]
 A2 = A1.merge(A0,how='outer',indicator=True).loc[lambda x : x['_merge']=='right_only']
  
 #%%
-tid = 1000
-tmp = trb.iloc[tid]
-fid = np.where((SiteInfo['row']==tmp['row']) & (SiteInfo['col']==tmp['col']))[0][0]
-arrayid = int(fid/nsites_per_id)
-sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
-Forcings,VOD,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 
-VOD_ma = np.reshape(VOD,[-1,2])
-VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
-# plt.plot(VOD_ma)
-forwardname = forwardpath+MODE+sitename+'.pkl'
-if os.path.isfile(forwardname):
-    with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
-        SVOD, SET, SPSIL,SPOPT = pickle.load(f)
+fidlist = []
+for tid in range(len(trb)):
+    tmp = trb.iloc[tid]
+    fidlist.append(np.where((SiteInfo['row']==tmp['row']) & (SiteInfo['col']==tmp['col']))[0][0])
 
-plt.figure()
-plt.subplot(211)
-plt.plot(ET,'-r')
-plt.plot(np.nanmean(SET,axis=0),'-',color='navy')
-plt.subplot(212)
-plt.plot(VOD,'-r')
-plt.plot(np.nanmean(SVOD,axis=0),'-',color='navy')
-
-# Next, calculate logliklihood of ET and VOD. See if VOD smashes ET. If so, play weith traits
-
-likname = likpath+'Loglik_'+str(arrayid)+'_1E3.pkl'
-
-with open(likname, 'rb') as f: 
-    Lik_25, Lik_50, Lik_75, MissingList = pickle.load(f)
-     
-sigma_et, sigma_vod, loglik = Lik_25[fid-arrayid*nsites_per_id,:]
-valid_vod = ~np.isnan(VOD_ma)
-valid_et = ~np.isnan(ET)
-loglik_vod = np.nanmean(norm.logpdf(VOD_ma,np.nanmean(SVOD,axis=0),sigma_vod))
-loglik_et = np.nanmean(norm.logpdf(ET,np.nanmean(SET,axis=0),sigma_et))
-
-print([loglik_vod,loglik_et])
+#%%
+subfidlist = [fidlist[i*200+2] for i in range(10)]+[fidlist[i*200+3] for i in range(10)]
+subfidlist.sort()
+np.save('trblist.npy',subfidlist)
+#%%
+# tid = 2000
+# tmp = trb.iloc[tid]
+# fid = np.where((SiteInfo['row']==tmp['row']) & (SiteInfo['col']==tmp['col']))[0][0]
+for fid in subfidlist:
+    arrayid = int(fid/nsites_per_id)
+    sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
+    Forcings,VOD,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+    
+    VOD_ma = np.reshape(VOD,[-1,2])
+    VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
+    # plt.plot(VOD_ma)
+    forwardname = forwardpath+MODE+sitename+'.pkl'
+    if os.path.isfile(forwardname):
+        with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
+            SVOD, SET, SPSIL,SPOPT = pickle.load(f)
+    
+    plt.figure()
+    plt.subplot(211)
+    plt.plot(ET,'-r')
+    plt.plot(np.nanmean(SET,axis=0),'-',color='navy')
+    plt.subplot(212)
+    plt.plot(VOD,'-r')
+    plt.plot(np.nanmean(SVOD,axis=0),'-',color='navy')
+    
+    # Next, calculate logliklihood of ET and VOD. See if VOD smashes ET. If so, play weith traits
+    
+    likname = likpath+'Loglik_'+str(arrayid)+'_1E3.pkl'
+    
+    with open(likname, 'rb') as f: 
+        Lik_25, Lik_50, Lik_75, MissingList = pickle.load(f)
+         
+    sigma_et, sigma_vod, loglik = Lik_25[fid-arrayid*nsites_per_id,:]
+    valid_vod = ~np.isnan(VOD_ma)
+    valid_et = ~np.isnan(ET)
+    loglik_vod = np.nanmean(norm.logpdf(VOD_ma,np.nanmean(SVOD,axis=0),sigma_vod))
+    loglik_et = np.nanmean(norm.logpdf(ET,np.nanmean(SET,axis=0),sigma_et))
+    
+    print([loglik_vod,loglik_et])
 
