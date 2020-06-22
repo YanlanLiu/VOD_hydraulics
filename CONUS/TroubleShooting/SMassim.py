@@ -24,16 +24,16 @@ from Utilities import MovAvg
 # =========================== control pannel =============================
 #baseid = int(sys.argv[1])
 baseid = 0
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-# samplenum = (8,2000)
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+samplenum = (8,2000)
 
 #arrayid = 10000 # 0-5, 10-15, 20-25, 30-35
-arrayid = 0
-samplenum = (1,10) # number of chuncks, number of samples per chunck
+#arrayid = 0
+#samplenum = (1,10) # number of chuncks, number of samples per chunck
 
 
-# parentpath = '/scratch/users/yanlan/'
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+parentpath = '/scratch/users/yanlan/'
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 versionpath = './SMassim/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
@@ -221,9 +221,9 @@ def Gaussian_loglik(theta0):
     loglik_vod = np.nansum(norm.logpdf(VOD_ma[valid_vod],VOD_hat[valid_vod],sigma_VOD))
     loglik_et = np.nansum(norm.logpdf(ET[valid_et],ET_hat[valid_et],sigma_ET))
     loglik_sm = np.nansum(norm.logpdf(SM[valid_sm],SM_hat[valid_sm],sigma_SM))
-    # if ~np.isfinite(loglik_vod): loglik_vod = -9999
-    # if ~np.isfinite(loglik_et): loglik_et = -9999
-    print(loglik_vod,loglik_et,loglik_sm)
+    if ~np.isfinite(loglik_vod): loglik_vod = -9999
+    if ~np.isfinite(loglik_et): loglik_et = -9999
+    if ~np.isfinite(loglik_sm): loglik_sm = -9999
     return loglik_vod+loglik_et+loglik_sm
 
 tic = time.perf_counter()
