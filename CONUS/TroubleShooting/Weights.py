@@ -34,7 +34,7 @@ samplenum = (8,2000)
 
 parentpath = '/scratch/users/yanlan/'
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-versionpath = './Control/'
+versionpath = './Weights/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'AM_PM_ET'
@@ -213,8 +213,8 @@ def Gaussian_loglik(theta0):
     sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
     valid_vod = ~np.isnan(VOD_ma)
     valid_et = ~np.isnan(ET)
-    loglik_vod = np.sum(norm.logpdf(VOD_ma[valid_vod],VOD_hat[valid_vod],sigma_VOD))
-    loglik_et = np.sum(norm.logpdf(ET[valid_et],ET_hat[valid_et],sigma_ET))
+    loglik_vod = np.nanmean(norm.logpdf(VOD_ma[valid_vod],VOD_hat[valid_vod],sigma_VOD))
+    loglik_et = np.nanmean(norm.logpdf(ET[valid_et],ET_hat[valid_et],sigma_ET))
     # if ~np.isfinite(loglik_vod): loglik_vod = -9999
     # if ~np.isfinite(loglik_et): loglik_et = -9999
     return loglik_vod+loglik_et
