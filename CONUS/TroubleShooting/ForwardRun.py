@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
 import sys; sys.path.append("../Utilities/")
-from newfun import readCLM
+from newfun_ts import readCLM
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca
 from newfun import GetTrace
@@ -49,7 +49,8 @@ arrayid = 81
 nsites_per_id = 1
 warmup, nsample = (0.8,1)
 
-versionpath = parentpath + 'Retrieval_0510/'
+# versionpath = parentpath + 'Retrieval_0510/'
+versionpath = './Control/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath +'Output/'
 forwardpath = versionpath+'Forward/'
@@ -65,7 +66,7 @@ for fid in trblist:#in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     PREFIX = outpath+MODE+'_'+sitename+'_'
     # print(PREFIX)
     
-    Forcings,VOD,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+    Forcings,VOD,SM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
     
     VOD_ma = np.reshape(VOD,[-1,2])
     VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
@@ -172,6 +173,7 @@ for fid in trblist:#in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         
         s1_list = np.zeros([N,]); s2_list = np.zeros([N,])
         e_list = np.zeros([N,]); t_list = np.zeros([N,])
+        psis1_list = np.zeros([N,]); psis2_list = np.zeros([N,])
     
         for i in np.arange(N):
             
@@ -261,23 +263,41 @@ for fid in trblist:#in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
 # print(f"Running time (20 sites): {toc-tic:0.4f} seconds")
 
     # plt.plot(VOD,'o',color='grey');plt.plot(VOD_hat,'-b')
-    r2_vod = 1-np.nanmean((VOD-VOD_hat)**2)/np.nanmean((VOD-np.nanmean(VOD))**2)
-    plt.figure(figsize=(6,6))
-    plt.subplot(211)
+    
+    #%%
+    plt.figure(figsize=(6,10))
+    plt.subplot(411)
+    r2_et = 1-np.nanmean((ET-ET_hat)**2)/np.nanmean((ET-np.nanmean(ET))**2)
     plt.plot(ET,'o',color='grey',label='ALEXI');plt.plot(ET_hat,'-r',label='ET')
     plt.plot(E_hat,'--b',label='E');plt.plot(T_hat,'--',color='darkgreen',label='T')
     plt.xticks([])
-    plt.ylabel('ET')
+    plt.ylabel(f"ET, R$^2$ = {r2_et:0.2f}")
     plt.legend(loc=0,bbox_to_anchor=(1.05,1.05))
-    r2_et = 1-np.nanmean((ET-ET_hat)**2)/np.nanmean((ET-np.nanmean(ET))**2)
-    plt.title(f"R2 = {r2_et:0.2f}")
     # print([r2_vod,r2_et])
-    plt.subplot(212)
-    plt.plot(np.arange(len(S1))/14,S1,label='S1');plt.plot(np.arange(len(S1))/14,S2,label='S2')
+    plt.subplot(412)
+    plt.plot(np.arange(len(SM))/7,SM,'o',color='grey',label='AMSRE')
+    plt.plot(np.arange(len(S1))/14,S1,label='S1')
+    plt.plot(np.arange(len(S1))/14,S2,label='S2')
     plt.ylabel('SM')
-    plt.xlabel('Week, '+sitename)
+    plt.xticks([])
     plt.legend(loc=3,bbox_to_anchor=(1.05,0.05))
-
+    
+    plt.subplot(413)
+    r2_vod = 1-np.nanmean((VOD-VOD_hat)**2)/np.nanmean((VOD-np.nanmean(VOD))**2)
+    plt.plot(np.arange(len(VOD))/14,VOD,'o',color='grey',label='AMSRE');
+    plt.plot(np.arange(len(VOD))/14,VOD_hat,label='VOD')
+    # plt.plot(np.arange(len(S1))/14,S2,label='S2')
+    plt.ylabel(f"VOD, R$^2$ = {r2_vod:0.2f}")
+    plt.xticks([])
+    plt.legend(loc=3,bbox_to_anchor=(1.05,0.05))
+    
+    ax1 = plt.subplot(414)
+    ax2 = ax1.twinx()
+    ax1.plot(np.arange(len(dPSIL))/14,dPSIL)
+    ax1.set_ylabel(r'$\psi_l$',color='b')
+    ax2.plot(np.arange(len(dLAI))/14,dLAI,'g')
+    ax2.set_ylabel(r'LAI',color='g')
+    ax1.set_xlabel('Week, '+sitename)
 
 
 

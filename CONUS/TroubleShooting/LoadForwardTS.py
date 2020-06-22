@@ -12,7 +12,7 @@ import pandas as pd
 import glob
 import sys; sys.path.append("../Utilities/")
 import warnings; warnings.simplefilter("ignore")
-from newfun import readCLM
+from newfun import readCLM, GetTrace, LoadEnsemble
 from Utilities import MovAvg
 import pickle
 import matplotlib.pyplot as plt
@@ -96,3 +96,12 @@ for fid in subfidlist:
     
     print([loglik_vod,loglik_et])
 
+#%% Define a function that loads forward results and trace
+fid = 1560
+sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
+paras =  LoadEnsemble(forwardpath,outpath,MODE,sitename)
+# sns.jointplot(x='psi50X',y='loglik',data=paras,kind="kde")
+
+corr = np.corrcoef(np.transpose(paras.dropna()))[2,:]
+
+# plt.plot(paras['psi50X'],paras['loglik'],'ok')

@@ -23,6 +23,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 #from utility_funs2 import *
 import glob
+import pickle
+import os
 
 UNIT_0 = 18e-6 # mol H2O/m2/s -> m/s H2O
 UNIT_1 = 1.6*UNIT_0 # mol CO2 /m2/s -> m/s, H2O
@@ -323,3 +325,19 @@ def GetTrace(PREFIX,warmup,optimal=False):
         optimalid = tmp.index(max(tmp))
         trace_df = trace_df[trace_df['chain']==chainlist[optimalid]].reset_index()
     return trace_df
+
+def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):
+    forwardname = forwardpath+MODE+sitename+'.pkl'
+    PREFIX = outpath+MODE+sitename+'_' 
+    flist = glob.glob(PREFIX+'*.pickle')
+    if os.path.isfile(forwardname) and len(flist)>5:
+        with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
+            SVOD, SET, SPSIL,SPOPT = pickle.load(f)
+        trace = GetTrace(PREFIX,0,optimal=False)
+        trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
+        theta = np.flipud(np.array(trace[varnames][-nsample:]))
+        paras = pd.DataFrame(theta,columns=varnames)
+        paras['a'] = SPOPT[:,0]; paras['b'] = SPOPT[:,1]; paras['c'] = SPOPT[:,2] #(1 + a*psil)*(b + c*lai)
+    else: 
+        paras = []
+    return paras #SVOD,SET,SPSIL,paras
