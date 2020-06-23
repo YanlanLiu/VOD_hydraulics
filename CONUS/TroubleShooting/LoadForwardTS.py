@@ -97,11 +97,14 @@ for fid in subfidlist:
     print([loglik_vod,loglik_et])
 
 #%% Define a function that loads forward results and trace
-fid = 1560
+fid = 1250
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 paras =  LoadEnsemble(forwardpath,outpath,MODE,sitename)
 # sns.jointplot(x='psi50X',y='loglik',data=paras,kind="kde")
 
+from newfun import varnames
 corr = np.corrcoef(np.transpose(paras.dropna()))[2,:]
-
-# plt.plot(paras['psi50X'],paras['loglik'],'ok')
+varnames_full = varnames+['a','b','c']
+for vname in ['loglik']:
+    plt.figure(figsize=(4,4));plt.plot(paras['psi50X'],paras[vname],'ok')
+    plt.xlabel('p50');plt.ylabel(vname)

@@ -21,6 +21,7 @@ versionpath = parentpath + 'Retrieval_0510/'
 outpath = versionpath+'Output/'
 
 traitpath = versionpath+'Traits/'
+tradeoffpath = versionpath+'Tradeoff/'
 r2path = versionpath+'R2/'
 npath = parentpath+'Input/ValidN/'
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
@@ -34,6 +35,7 @@ V50 = np.zeros([0,len(varlist)]);
 V25 = np.copy(V50); V75 = np.copy(V50)
 HSM = np.zeros([0,3])
 ML = np.zeros([0,])
+P50CORR = np.zeros([0,13]) 
     
 R2 = np.zeros([0,2])
 RMSE = np.zeros([0,2])
@@ -42,16 +44,22 @@ ValidN = np.zeros([len(SiteInfo),2])
 for arrayid in range(14):
     print(arrayid)
     traitname = traitpath+'Traits_'+str(arrayid)+'_1E3.pkl'
-    hsmname = traitpath+'HSM_'+str(arrayid)+'_1E3.pkl'
+    # hsmname = traitpath+'HSM_'+str(arrayid)+'_1E3.pkl'
+    # p50corrname = traitpath+'P50corr_'+str(arrayid)+'_1E3.pkl'
     with open(traitname, 'rb') as f: 
         Val_25, Val_50, Val_75, MissingList = pickle.load(f)
-    with open(hsmname, 'rb') as f: 
-       hsm = pickle.load(f)
+    # with open(hsmname, 'rb') as f: 
+    #    hsm = pickle.load(f)
+       
+    # with open(p50corrname, 'rb') as f: 
+    #    p50corr = pickle.load(f)
+       
     V25 = np.concatenate([V25,Val_25],axis=0)
     V50 = np.concatenate([V50,Val_50],axis=0)
     V75 = np.concatenate([V75,Val_75],axis=0)
-    ML = np.concatenate([ML,MissingList])
-    HSM = np.concatenate([HSM,np.transpose(np.array([np.nanpercentile(hsm,pct,axis=1) for pct in [25,50,75]]))],axis=0)
+    # ML = np.concatenate([ML,MissingList])
+    # HSM = np.concatenate([HSM,np.transpose(np.array([np.nanpercentile(hsm,pct,axis=1) for pct in [25,50,75]]))],axis=0)
+    # P50CORR = np.concatenate([P50CORR,p50corr],axis=0)
     
     nname = npath+'N_'+str(arrayid)+'_1E3.pkl.npy'
     vn = np.load(nname)
@@ -64,16 +72,52 @@ for arrayid in range(14):
     R2 = np.concatenate([R2,r2],axis=0)
     RMSE = np.concatenate([RMSE,rmse],axis=0)
     CORR = np.concatenate([CORR,corr],axis=0)
-    
-#%%
-# SiteInfo = SiteInfo.iloc[0:len(V25)]
-# # Trait = pd.DataFrame((V75-V25)/V50,columns=varlist)
 
-Trait = pd.DataFrame(V50,columns=varlist)
+
 Acc = pd.DataFrame(np.column_stack([R2,RMSE,CORR]),columns=['R2_VOD','R2_ET','RMSE_VOD','RMSE_ET','r_VOD','r_ET'])
 VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
-
+Trait = pd.DataFrame((V75-V25)/V50,columns=varlist)
 df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
+# df = pd.concat([SiteInfo,Trait,VN],axis=1)
+
+# c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+# df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>50) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
+df['obsfilter'] = (df['N_VOD']>10) & (df['N_ET']>2)*1 # to be used
+df = df[df['obsfilter']==1]
+# plt.hist(df['N_VOD'])
+    
+#%%
+for arrayid in range(14):
+    print(arrayid)   
+    nname = npath+'N_'+str(arrayid)+'_1E3.pkl.npy'
+    vn = np.load(nname)
+    array_range = np.arange(arrayid*1000,(arrayid+1)*1000)
+    ValidN[array_range,:] =  vn[array_range,:]
+    # plt.figure();plt.plot(vn[:,1])
+    r2anme = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
+    with open(r2anme, 'rb') as f: 
+        r2,rmse,corr, MissingListR2 = pickle.load(f)
+    R2 = np.concatenate([R2,r2],axis=0)
+    RMSE = np.concatenate([RMSE,rmse],axis=0)
+    CORR = np.concatenate([CORR,corr],axis=0)
+for arrayid in range(14):
+    print(arrayid)
+    p50corrname = traitpath+'P50corr_'+str(arrayid)+'_1E3.pkl'
+       
+    with open(p50corrname, 'rb') as f: 
+       p50corr = pickle.load(f)
+    P50CORR = np.concatenate([P50CORR,p50corr],axis=0)    
+
+# SiteInfo = SiteInfo.iloc[0:len(V25)]
+# # Trait = pd.DataFrame((V75-V25)/V50,columns=varlist)
+#%%
+from newfun import varnames
+# Trait = pd.DataFrame(V50,columns=varlist)
+Acc = pd.DataFrame(np.column_stack([R2,RMSE,CORR]),columns=['R2_VOD','R2_ET','RMSE_VOD','RMSE_ET','r_VOD','r_ET'])
+VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
+PC = pd.DataFrame(P50CORR,columns=varnames+['a','b','c'])
+# PC[np.abs(PC)<0.5] = 0
+df = pd.concat([SiteInfo,Acc,VN,PC],axis=1)
 # df = pd.concat([SiteInfo,Trait,VN],axis=1)
 
 # c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
@@ -81,6 +125,25 @@ df = pd.concat([SiteInfo,Trait,Acc,VN],axis=1)
 df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
 df = df[df['obsfilter']==1]
 # plt.hist(df['N_VOD'])
+
+#%%
+varname = 'lpx'
+# varname='IGBP'
+# if df[varname].mean()>0:df[varname] = -df[varname]
+lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
+heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+fig=plt.figure(figsize=(13.2,5))
+m = Basemap(llcrnrlon = -128, llcrnrlat = 25, urcrnrlon = -62, urcrnrlat = 50)
+
+m.drawcoastlines()
+m.drawcountries()
+mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
+# mycmap = sns.cubehelix_palette(6, rot=-.5, dark=.3,as_cmap=True)
+cs = m.pcolormesh(np.unique(lon),np.flipud(np.unique(lat)),heatmap1_data,cmap='RdBu_r',vmin=-1,vmax=1,shading='quad')
+cbar = m.colorbar(cs)
+cbar.set_label(varname,rotation=360,labelpad=15)
+plt.show()
+
 #%%
 # df['lcfilter'] = ((df['IGBP']==16))*1# to be removed
 # df['obsfilter'] = (df['N_VOD']>500)*(df['N_ET']>50)*1 # to be used
@@ -188,9 +251,11 @@ plt.ylim([0,.8])
 
 
 #%%
-varname = 'lpx'
+varname = 'psi50X'
 # varname='IGBP'
-Trait = pd.DataFrame(V50,columns=varlist)
+# Trait = pd.DataFrame((V75-V25)/7,columns=varlist)
+Trait = pd.DataFrame(V25,columns=varlist)
+
 Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
 VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
 
