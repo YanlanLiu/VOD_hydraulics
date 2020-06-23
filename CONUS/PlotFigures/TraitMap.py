@@ -18,17 +18,43 @@ from Utilities import LatLon
 from scipy.stats import norm,gamma
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 versionpath = parentpath + 'Retrieval_0510/'
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
+
+
+
+statspath = versionpath+'Traits/'; PREFIX = 'Traits_'
+
+def ReadSpatialStats(PREFIX,SUFFIX='_1E3.pkl',N=14):
+    fname = PREFIX+str(0)+SUFFIX
+    with open(fname, 'rb') as f: 
+        VAL = pickle.load(f)
+    for arrayid in range(1,N):
+        fname = PREFIX+str(arrayid)+SUFFIX
+        with open(fname, 'rb') as f: 
+            val = pickle.load(f)
+        if len(val)<10:
+            for ii in range(len(val)):
+                VAL[ii] = np.concatenate([VAL[ii],val[ii]],axis=0)
+        else:
+            VAL = np.concatenate([VAL,val],axis=0)
+    return VAL
+
+V25,V50,V75,MissingList = ReadSpatialStats(versionpath+'Traits/Traits_')
+R2,RMSE,CORR, MissingListR2 = ReadSpatialStats(versionpath+'R2/R2_')
+
+
+
+
+#%%
 outpath = versionpath+'Output/'
 
 traitpath = versionpath+'Traits/'
 tradeoffpath = versionpath+'Tradeoff/'
 r2path = versionpath+'R2/'
 npath = parentpath+'Input/ValidN/'
-SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
 varlist = ['g1','lpx','psi50X','gpmax','C','bexp','bc']
 
-MODE = 'AM_PM_ET_'
 
 #%%
 V50 = np.zeros([0,len(varlist)]); 
