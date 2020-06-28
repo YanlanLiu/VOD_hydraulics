@@ -5,7 +5,7 @@ Created on Sat Jun 27 22:57:55 2020
 
 @author: yanlan
 
-Same as Weights but assimilating surface soil moisture also, added one parameter sigma_sm
+Same as SMassim but added one parameter evk
 
 """
 
@@ -18,25 +18,25 @@ from scipy.stats import norm
 import warnings; warnings.simplefilter("ignore")
 import time
 import sys; sys.path.append("../Utilities/")
-from newfun_ts import readCLM, fitVOD_RMSE, AMIS
-from newfun_ts import varnames,scale,dt, hour2day, hour2week
-from newfun_ts import OB,CONST,CLAPP,ca
+from newfun_ts_slope import readCLM, fitVOD_RMSE, AMIS
+from newfun_ts_slope import varnames,scale,dt, hour2day, hour2week
+from newfun_ts_slope import OB,CONST,CLAPP,ca
 from Utilities import MovAvg
 # np.random.seed(seed=123)
 
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
-parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (8,2000)
+# parentpath = '/scratch/users/yanlan/'
+# baseid = 0 # int(sys.argv[1])
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+# samplenum = (10,2000)
 
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 81
-#samplenum = (1,10) # number of chuncks, number of samples per chunck
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 81
+samplenum = (1,10) # number of chuncks, number of samples per chunck
 
 
-versionpath = parentpath+'TroubleShooting/SMassim/'
+versionpath = parentpath+'TroubleShooting/SMslope/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'AM_PM_ET'
@@ -142,7 +142,7 @@ def get_ti(clm,condS):
     return ti
         
 def runhh_2soil_hydro(theta):    
-    g1, lpx, psi50X, gpmax,C, bexp, sbot = theta[:7]
+    g1, lpx, psi50X, gpmax,C, bexp, sbot, evk = theta[:8]
     
     medlyn_term = 1+g1/np.sqrt(VPD_kPa) # double check
     ci = ca*(1-1/medlyn_term)
@@ -184,7 +184,7 @@ def runhh_2soil_hydro(theta):
                 s2, phiL = advance_linearize(s2,phiL,ti,gpmax,C,psi50X,bexp,dt/tdiv)
             ti = np.mean(tlist)
         
-        ei= petVnumB[i]*(s1/n) #**bexp#*s1/n#*soilfac#*((s1-smcwilt)/(n-smcwilt)**(1))
+        ei= petVnumB[i]*((s1-0.05)*evk) #**bexp#*s1/n#*soilfac#*((s1-smcwilt)/(n-smcwilt)**(1))
         s1 = min(s1+(P[i]-ei)*dt/d1,n)#p_e = P-E 
         
               
