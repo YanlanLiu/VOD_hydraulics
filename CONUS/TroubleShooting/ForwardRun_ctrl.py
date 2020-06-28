@@ -6,13 +6,6 @@ Created on Wed Jun 24 11:19:06 2020
 @author: yanlan
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Feb 23 12:09:54 2020
-
-@author: yanlan
-"""
-
 from random import randint
 import pickle
 import os
@@ -325,7 +318,7 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     
     statsname = statspath+MODE+'_'+sitename+'.pkl'
     with open(statsname, 'wb') as f: 
-        pickle.dump((OBS_temporal_mean,OBS_temporal_std,TS_temporal_mean,TS_temporal_std,PARA_ensembel_mean,PARA_ensembel_std), f)
+        pickle.dump((TS_temporal_mean,TS_temporal_std,PARA_ensembel_mean,PARA_ensembel_std), f)
 
 toc = time.perf_counter()
 
