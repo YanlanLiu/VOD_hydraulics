@@ -30,7 +30,7 @@ nsites_per_id = 1
 warmup, nsample,thinning = (0.7,200,20)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 10
+#arrayid = 62
 #nsites_per_id = 1
 #warmup, nsample,thinning = (0.7,2,20)
 
@@ -227,6 +227,7 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
 
 
     for count in range(nsample):
+        print(count)
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
         try:
             tmp = trace['g1'].iloc[idx_s]
@@ -269,8 +270,11 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         OBS_temporal_mean.append(np.nanmean(ET[wwet])/np.nanmean(ET[wdry]))
         OBS_temporal_std.append(np.nan)
         res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
-        OBS_temporal_mean.append(res.params[0])
-        OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        if res!=0:
+            OBS_temporal_mean.append(res.params[0])
+            OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        else:
+            OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
         obsname = obspath+MODE+'_'+sitename+'.pkl'
         with open(obsname, 'wb') as f: 
             pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
@@ -305,8 +309,12 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     iso_mean = []; iso_std = []
     for i in range(nsample):
         res = nanOLS(np.column_stack([TS[0][i,::2],dLAI[::2]]), TS[0][i,1::2])
-        iso_mean.append(res.params[0])
-        iso_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        if res!=0:
+            iso_mean.append(res.params[0])
+            iso_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        else:
+            iso_mean.append(res)
+            iso_std.append(res)
     
     TS_temporal_mean.append(np.array(iso_mean))
     TS_temporal_std.append(np.array(iso_std))
