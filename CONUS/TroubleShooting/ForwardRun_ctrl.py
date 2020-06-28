@@ -260,7 +260,7 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     
     # ======== OBS stats ===========
     if OBSstats>0:
-        OBS = (VOD_ma,SOILM,ET,VOD_ma[1::2]/VOD_ma[::2])
+        OBS = (VOD_ma,SOILM,ET,dLAI,VOD_ma[1::2]/VOD_ma[::2])
         OBS_temporal_mean = [np.nanmean(itm) for itm in OBS]
         OBS_temporal_std = [np.nanstd(itm) for itm in OBS]
         
@@ -269,13 +269,16 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         OBS_temporal_mean.append(np.nanmean(ET[wwet])/np.nanmean(ET[wdry]))
         OBS_temporal_std.append(np.nan)
         res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
-        OBS_temporal_mean.append(res.params[0])
-        OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        if res!=0:
+            OBS_temporal_mean.append(res.params[0])
+            OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        else:
+            OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
         obsname = obspath+MODE+'_'+sitename+'.pkl'
-        with open(obsname, 'wb') as f: 
+        with open(obsname, 'wb') as f:
             pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
 
-    # VOD,SOILM,ET,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
+    # VOD,SOILM,ET,dLAI,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
     
     
     # ======== Performance =========
@@ -305,8 +308,12 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     iso_mean = []; iso_std = []
     for i in range(nsample):
         res = nanOLS(np.column_stack([TS[0][i,::2],dLAI[::2]]), TS[0][i,1::2])
-        iso_mean.append(res.params[0])
-        iso_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        if res!=0:
+            iso_mean.append(res.params[0])
+            iso_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+        else:
+            iso_mean.append(res)
+            iso_std.append(res)
     
     TS_temporal_mean.append(np.array(iso_mean))
     TS_temporal_std.append(np.array(iso_std))

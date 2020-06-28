@@ -139,7 +139,10 @@ def rm_outlier_sn(tmpdf,sn):
 
 def nanOLS(X,y):
     nanfilter = ~np.isnan(np.sum(X,axis=1)+y)
-    X = sm.add_constant(X)
-    mod = sm.OLS(y[nanfilter], X[nanfilter])
-    res = mod.fit()
+    if sum(nanfilter)>3:
+        X = sm.add_constant(X)
+        mod = sm.OLS(y[nanfilter], X[nanfilter])
+        res = mod.fit()
+    else:
+        res = 0
     return res
