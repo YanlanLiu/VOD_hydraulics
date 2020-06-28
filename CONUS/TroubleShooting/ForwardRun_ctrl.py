@@ -32,14 +32,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-nsites_per_id = 1
-warmup, nsample,thinning = (0.8,200,10)
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+# nsites_per_id = 1
+# warmup, nsample,thinning = (0.8,200,10)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 81
-#nsites_per_id = 1
-#warmup, nsample,thinning = (0.8,2,10)
+arrayid = 10
+nsites_per_id = 1
+warmup, nsample,thinning = (0.8,2,20)
 
 versionpath = parentpath + 'TroubleShooting/Control/'
 inpath = parentpath+ 'Input/'
@@ -52,6 +52,10 @@ obspath = versionpath+'../OBS_STATS/'; OBSstats = 1
 
 MODE = 'AM_PM_ET'
 SiteInfo = pd.read_csv('SiteInfo_reps.csv')
+
+
+def calR2(yhat,y):
+    return 1-np.nanmean((y-yhat)**2)/np.nanmean((y-np.nanmean(y))**2)
 
 
 for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
@@ -221,12 +225,12 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
     wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
     
-    wet = (SOILM>np.nanpercentile(SOILM,75)) & (dVPD<np.nanpercentile(dVPD,25)) # one per day
-    dry = (SOILM<np.nanpercentile(SOILM,25)) & (dVPD>np.nanpercentile(dVPD,75))
+    wet = (SOILM>np.nanpercentile(SOILM,70)) & (dVPD<np.nanpercentile(dVPD,30)) # one per day
+    dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
     dwet = np.repeat(wet,2) # two per day
     ddry = np.repeat(dry,2) 
-    wwet = (wSOILM>np.nanpercentile(wSOILM,75)) & (wVPD<np.nanpercentile(wVPD,25)) # per week
-    wdry = (wSOILM<np.nanpercentile(wSOILM,25)) & (wVPD>np.nanpercentile(wVPD,75))
+    wwet = (wSOILM>np.nanpercentile(wSOILM,70)) & (wVPD<np.nanpercentile(wVPD,30)) # per week
+    wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
 
 
     for count in range(nsample):
@@ -246,9 +250,11 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         E_hat = hour2week(E_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
         T_hat = hour2week(T_hat,UNIT=24)[~discard_et]
         dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
-        VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True)      
+        VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True) 
+        dS1 = hour2day(S1_hat,idx)[~discard_vod][::2]
+        dS2 = hour2day(S2_hat,idx)[~discard_vod][::2]
 
-        TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,E_hat,T_hat,ET_ampm,PSIL_hat,S1_hat,S2_hat))]
+        TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,E_hat,T_hat,ET_ampm,PSIL_hat,dS1,dS2))]
         PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta))]
     
     TS = [np.reshape(itm,[nsample,-1]) for itm in TS] # VOD,E,T,ET_AP,PSIL,S1,S2
@@ -277,6 +283,18 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
             pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
 
     # VOD,SOILM,ET,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
+    
+    
+    # ======== Performance =========
+    r2_vod = np.apply_along_axis(calR2,1,TS[0],VOD_ma)
+    r2_et = np.apply_along_axis(calR2,1,TS[1]+TS[2],ET)
+    r2_sm = np.apply_along_axis(calR2,1,TS[5],SOILM)
+    p50_pct = [trace['psi50X'].quantile(pct) for pct in [.25,.5,.75]] 
+    
+    accname = statspath+'R2_'+sitename+'.pkl'
+    with open(accname, 'wb') as f: 
+        pickle.dump((r2_vod,r2_et,r2_sm,p50_pct), f)
+
     
     # ======== TS stats ============
     # np.apply_along_axis()
