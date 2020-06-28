@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  File "ForwardRun_ctrl.py", line 296, in <module>
+  File "ForwardRun_ctrl.py", line 314, in <module>
     res = nanOLS(np.column_stack([TS[0][i,::2],dLAI[::2]]), TS[0][i,1::2])
   File "../Utilities/Utilities.py", line 143, in nanOLS
     mod = sm.OLS(y[nanfilter], X[nanfilter])
@@ -22,4 +22,4 @@ Traceback (most recent call last):
   File "/home/users/yanlan/anaconda3/lib/python3.6/site-packages/statsmodels/base/data.py", line 131, in _handle_constant
     ptp_ = self.exog.ptp(axis=0)
 ValueError: zero-size array to reduction operation maximum which has no identity
-/var/spool/slurmd/job3107698/slurm_script: line 19: /home/users/yanlan: Is a directory
+/var/spool/slurmd/job3111704/slurm_script: line 19: /home/users/yanlan: Is a directory

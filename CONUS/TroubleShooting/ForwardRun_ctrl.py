@@ -32,14 +32,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-# nsites_per_id = 1
-# warmup, nsample,thinning = (0.8,200,10)
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+nsites_per_id = 1
+warmup, nsample,thinning = (0.7,200,20)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 10
-nsites_per_id = 1
-warmup, nsample,thinning = (0.8,2,20)
+#arrayid = 10
+#nsites_per_id = 1
+#warmup, nsample,thinning = (0.7,2,20)
 
 versionpath = parentpath + 'TroubleShooting/Control/'
 inpath = parentpath+ 'Input/'
