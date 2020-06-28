@@ -85,7 +85,7 @@ def readCLM(inpath,sitename):
     idx_vod = np.where(tt_amsr==tt_gldas[0].date())[0][0]
     amsr = amsr[idx_vod:idx_vod+ndays]
     VOD = np.reshape(np.column_stack([rm_outlier(amsr['VOD_am']),rm_outlier(amsr['VOD_pm'])]),[-1,])[~discard_vod]
-    
+    SOILM = rm_outlier(amsr['SOILM_am'])[~discard_vod[::2]]/100
     
     alexi = pd.read_csv(inpath+'ALEXI/ET_'+sitename+'.csv')
     tt_alexi = np.array([itm for y in range(2003,2012) for itm in np.arange(np.datetime64(str(y)+'-01-08'),np.datetime64(str(y+1)+'-01-01'), np.timedelta64(7,'D'))])
@@ -105,7 +105,7 @@ def readCLM(inpath,sitename):
     # Obsv = (VOD,ET,dLAI)
     # Discard = (discard_vod,discard_et,[amidx,pmidx])
     
-    return Forcings,VOD,ET,dLAI,discard_vod,discard_et,[amidx,pmidx]
+    return Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,[amidx,pmidx]
 
 def LightExtinction(DOY,lat,x):
     B = (DOY-81)*2*np.pi/365

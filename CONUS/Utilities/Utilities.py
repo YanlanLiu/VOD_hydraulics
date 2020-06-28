@@ -8,6 +8,7 @@ import numpy as np
 from scipy.stats import mode
 import calendar
 from scipy import fft
+import statsmodels.api as sm
 
 def Gini_simpson(a):
     a = np.reshape(a,[-1,])
@@ -91,20 +92,20 @@ def MovAvg(a,windowsize):
 def normalize(A):
     return (A-np.nanmean(A))/np.nanstd(A)
 
-#import matplotlib.pyplot as plt
-def Fourier_transform(A,T,plotfigure=True,alpha=1,label=''):
-    N = len(A)
-    xf = np.arange(1,(N+1)//2)/N
-    xf = xf/T
-    yf = fft(A)/N
-    Ef = np.abs(yf[1:N//2])**2
-    if plotfigure:
-        plt.plot(xf, Ef,alpha=alpha,label=label)
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.xlabel('f')
-        plt.ylabel('E(f)')
-    return xf,yf,Ef
+# #import matplotlib.pyplot as plt
+# def Fourier_transform(A,T,plotfigure=True,alpha=1,label=''):
+#     N = len(A)
+#     xf = np.arange(1,(N+1)//2)/N
+#     xf = xf/T
+#     yf = fft(A)/N
+#     Ef = np.abs(yf[1:N//2])**2
+#     if plotfigure:
+#         plt.plot(xf, Ef,alpha=alpha,label=label)
+#         plt.yscale('log')
+#         plt.xscale('log')
+#         plt.xlabel('f')
+#         plt.ylabel('E(f)')
+#     return xf,yf,Ef
 
 def itp_rm_outlier(tmpdf,rm = 2):
     tmp = np.array(tmpdf)
@@ -135,3 +136,10 @@ def rm_outlier_sn(tmpdf,sn):
     anomaly = tmp-sns
     tmp[np.abs(anomaly-np.nanmean(anomaly))>2*np.nanstd(anomaly)] = np.nan
     return tmp
+
+def nanOLS(X,y):
+    nanfilter = ~np.isnan(np.sum(X,axis=1)+y)
+    X = sm.add_constant(X)
+    mod = sm.OLS(y[nanfilter], X[nanfilter])
+    res = mod.fit()
+    return res
