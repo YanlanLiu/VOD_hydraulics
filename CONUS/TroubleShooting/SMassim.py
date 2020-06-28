@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jun 21 20:40:25 2020
+Created on Sat Jun 27 22:57:55 2020
 
 @author: yanlan
 
-Same as control but using equal weights for each catogory of VOD and ET rather than each data point
+Same as Weights but assimilating surface soil moisture also, added one parameter sigma_sm
+
 """
+
 
 
 import os
@@ -16,25 +18,25 @@ from scipy.stats import norm
 import warnings; warnings.simplefilter("ignore")
 import time
 import sys; sys.path.append("../Utilities/")
-from newfun import readCLM, fitVOD_RMSE, AMIS
-from newfun import varnames,scale,dt, hour2day, hour2week
-from newfun import OB,CONST,CLAPP,ca
+from newfun_ts import readCLM, fitVOD_RMSE, AMIS
+from newfun_ts import varnames,scale,dt, hour2day, hour2week
+from newfun_ts import OB,CONST,CLAPP,ca
 from Utilities import MovAvg
 # np.random.seed(seed=123)
 
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
-parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (8,2000)
+# parentpath = '/scratch/users/yanlan/'
+# baseid = 0 # int(sys.argv[1])
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+# samplenum = (8,2000)
 
-# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 81 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (1,10) # number of chuncks, number of samples per chunck
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 81
+samplenum = (1,10) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/Weights/'
 
+versionpath = parentpath+'TroubleShooting//SMassim/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'AM_PM_ET'
@@ -51,10 +53,11 @@ print(PREFIX)
 
 # =========================== read input =================================
 #%%
-Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+Forcings,VOD,SM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 
 VOD_ma = np.reshape(VOD,[-1,2])
 VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
+
 
 Z_r,tx = (SiteInfo['Root depth'][fid]*1000,int(SiteInfo['Soil texture'][fid]))
 
@@ -139,7 +142,7 @@ def get_ti(clm,condS):
     return ti
         
 def runhh_2soil_hydro(theta):    
-    g1, lpx, psi50X, gpmax,C, bexp, sbot = theta
+    g1, lpx, psi50X, gpmax,C, bexp, sbot = theta[:7]
     
     medlyn_term = 1+g1/np.sqrt(VPD_kPa) # double check
     ci = ca*(1-1/medlyn_term)
@@ -155,12 +158,12 @@ def runhh_2soil_hydro(theta):
         
     phil_list = np.zeros([N,])
     et_list = np.zeros([N,])
-    
+
     s1 = np.copy(sinit)
     s2 = np.copy(sinit) 
     phiL = phi0*(s2/n)**(-bexp) - 0.01
     
-    # s1_list = np.zeros([N,]); s2_list = np.zeros([N,])
+    s1_list = np.zeros([N,])#; s2_list = np.zeros([N,])
     # e_list = np.zeros([N,]); t_list = np.zeros([N,])
 
     for i in np.arange(N):
@@ -195,28 +198,34 @@ def runhh_2soil_hydro(theta):
         s2 = min(max(s2+f12/d2 - f23/d2,0.05),n)  
             
         et_list[i] = ei+ti
-        # s1_list[i] = np.copy(s1); s2_list[i] = np.copy(s2)
+        s1_list[i] = np.copy(s1)#; s2_list[i] = np.copy(s2)
         # e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
     
-    return phil_list,et_list #,s1_list,s2_list,e_list,t_list
+    return phil_list,et_list,s1_list #,s1_list,s2_list,e_list,t_list
 
 #%%
 # ========================== MCMC sampling ==============================  
-idx_sigma_vod = varnames.index('sigma_vod'); idx_sigma_et = varnames.index('sigma_et')
+idx_sigma_vod = varnames.index('sigma_vod')
+idx_sigma_et = varnames.index('sigma_et')
+idx_sigma_sm =  varnames.index('sigma_sm')
 def Gaussian_loglik(theta0):
     theta = theta0*scale
-    PSIL_hat,ET_hat = runhh_2soil_hydro(theta[:-2])
+    PSIL_hat,ET_hat,SM_hat = runhh_2soil_hydro(theta)
     ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
     dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
+    SM_hat = hour2day(SM_hat,idx)[~discard_vod][::2]
     VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)
-    sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
+    sigma_VOD, sigma_ET, sigma_SM = (theta[idx_sigma_vod], theta[idx_sigma_et],theta[idx_sigma_sm])
     valid_vod = ~np.isnan(VOD_ma)
     valid_et = ~np.isnan(ET)
+    valid_sm = ~np.isnan(SM)
     loglik_vod = np.nanmean(norm.logpdf(VOD_ma[valid_vod],VOD_hat[valid_vod],sigma_VOD))
     loglik_et = np.nanmean(norm.logpdf(ET[valid_et],ET_hat[valid_et],sigma_ET))
-    # if ~np.isfinite(loglik_vod): loglik_vod = -9999
-    # if ~np.isfinite(loglik_et): loglik_et = -9999
-    return loglik_vod+loglik_et
+    loglik_sm = np.nanmean(norm.logpdf(SM[valid_sm],SM_hat[valid_sm],sigma_SM))
+    if ~np.isfinite(loglik_vod): loglik_vod = -9999
+    if ~np.isfinite(loglik_et): loglik_et = -9999
+    if ~np.isfinite(loglik_sm): loglik_sm = -9999
+    return loglik_vod+loglik_et+loglik_sm
 
 tic = time.perf_counter()
 AMIS(Gaussian_loglik,PREFIX,samplenum)
