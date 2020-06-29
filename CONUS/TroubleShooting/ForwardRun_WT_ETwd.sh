@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=fw_smslope
+#SBATCH --job-name=fwt_et
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
 #SBATCH --array=0-99
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
-#SBATCH --time=0:30:00
+#SBATCH --time=1:00:00
 #SBATCH --mem-per-cpu=2000
 
 ######################
@@ -14,6 +14,6 @@
 ######################
 
 # Print this sub-job's task ID
-echo "GRID: " $SLURM_ARRAY_TASK_ID >> ForwardRun_smslope.out
-python ForwardRun_smslope.py
+echo "GRID: " $SLURM_ARRAY_TASK_ID >> ForwardRun_WT_ETwd.out
+python ForwardRun_WT_ETwd.py
 ~

@@ -30,18 +30,18 @@ nsites_per_id = 1
 warmup, nsample,thinning = (0.7,200,20)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 10
+#arrayid = 62
 #nsites_per_id = 1
 #warmup, nsample,thinning = (0.7,2,20)
 
-versionpath = parentpath + 'TroubleShooting/Control/'
+versionpath = parentpath + 'TroubleShooting/WT_ETwd/'
 inpath = parentpath+ 'Input/'
-# outpath = versionpath +'Output/'
-outpath =  parentpath + 'Retrieval_0510/Output/'
+outpath = versionpath +'Output/'
+#outpath =  parentpath + 'Retrieval_0510/Output/'
 
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
-obspath = versionpath+'../OBS_STATS/'; OBSstats = 1
+obspath = versionpath+'../OBS_STATS/'; OBSstats = 0
 
 MODE = 'AM_PM_ET'
 SiteInfo = pd.read_csv('SiteInfo_reps.csv')
@@ -227,6 +227,7 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
 
 
     for count in range(nsample):
+        print(count)
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
         try:
             tmp = trace['g1'].iloc[idx_s]
@@ -257,11 +258,10 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     forwardname = forwardpath+MODE+'_'+sitename+'.pkl'
     with open(forwardname, 'wb') as f: pickle.dump((TS,PARA), f)
     
-        
- 
+    
     # ======== OBS stats ===========
     if OBSstats>0:
-        OBS = (VOD_ma,SOILM,ET,dLAI,VOD_ma[1::2]/VOD_ma[::2])
+        OBS = (VOD_ma,SOILM,ET,VOD_ma[1::2]/VOD_ma[::2])
         OBS_temporal_mean = [np.nanmean(itm) for itm in OBS]
         OBS_temporal_std = [np.nanstd(itm) for itm in OBS]
         
@@ -276,10 +276,10 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         else:
             OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
         obsname = obspath+MODE+'_'+sitename+'.pkl'
-        with open(obsname, 'wb') as f:
+        with open(obsname, 'wb') as f: 
             pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
 
-    # VOD,SOILM,ET,dLAI,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
+    # VOD,SOILM,ET,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
     
     
     # ========= Convergence ==========
@@ -310,7 +310,6 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     accname = statspath+'R2_'+sitename+'.pkl'
     with open(accname, 'wb') as f: 
         pickle.dump((acc_en,r2_vod,r2_et,r2_sm,p50_pct,Geweke), f)
-
     
     # ======== TS stats ============
     # np.apply_along_axis()
