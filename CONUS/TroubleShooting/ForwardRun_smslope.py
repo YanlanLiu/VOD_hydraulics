@@ -15,7 +15,7 @@ import warnings; warnings.simplefilter("ignore")
 import sys; sys.path.append("../Utilities/")
 from newfun_full import readCLM
 from newfun_ts_slope import fitVOD_RMSE,dt, hour2day, hour2week
-from newfun_ts_slope import OB,CONST,CLAPP,ca
+from newfun_ts_slope import OB,CONST,CLAPP,ca, varnames
 from newfun_ts_slope import GetTrace
 from Utilities import MovAvg, nanOLS
 import time
@@ -281,16 +281,35 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     # VOD,SOILM,ET,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
     
     
+    # ========= Convergence ==========
+    sample_length = int(1e3); step = int(5e2)
+    st_list = range(1000,int(len(trace)/sample_length)*sample_length-sample_length+1,step)
+    Geweke = []
+    chainid = 0
+    for varname in varnames[:-1]:
+        chain = np.array(trace[varname][trace['chain']==chainid])
+        chain = chain[:int(len(chain)/sample_length)*sample_length] 
+        for st in st_list:
+            tmps = chain[st:(st+sample_length)]
+            tmpe = chain[-sample_length:]
+            Geweke.append((np.nanmean(tmps)-np.nanmean(tmpe))/np.sqrt(np.nanvar(tmps)+np.nanvar(tmpe)))
+    Geweke = np.abs(np.array(Geweke))
+
+    
     # ======== Performance =========
     r2_vod = np.apply_along_axis(calR2,1,TS[0],VOD_ma)
     r2_et = np.apply_along_axis(calR2,1,TS[1]+TS[2],ET)
     r2_sm = np.apply_along_axis(calR2,1,TS[5],SOILM)
+    er2_vod = calR2(np.nanmean(TS[0],axis=0),VOD_ma)
+    er2_et = calR2(np.nanmean(TS[1]+TS[2],axis=0),ET)
+    er2_sm = calR2(np.nanmean(TS[5],axis=0),SOILM)
+    acc_en = [er2_vod,er2_et,er2_sm]
     p50_pct = [trace['psi50X'].quantile(pct) for pct in [.25,.5,.75]] 
     
     accname = statspath+'R2_'+sitename+'.pkl'
     with open(accname, 'wb') as f: 
-        pickle.dump((r2_vod,r2_et,r2_sm,p50_pct), f)
-
+        pickle.dump((acc_en,r2_vod,r2_et,r2_sm,p50_pct,Geweke), f)
+        
     
     # ======== TS stats ============
     # np.apply_along_axis()
