@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
 import sys; sys.path.append("../Utilities/")
-from newfun_full import readCLM
+from newfun import readCLM # newfun_full
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca,varnames
 from newfun import GetTrace
@@ -34,7 +34,7 @@ warmup, nsample,thinning = (0.7,200,20)
 #nsites_per_id = 1
 #warmup, nsample,thinning = (0.7,2,20)
 
-versionpath = parentpath + 'TroubleShooting/Weights/'
+versionpath = parentpath + 'TroubleShooting/Weights_tr/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath +'Output/'
 #outpath =  parentpath + 'Retrieval_0510/Output/'

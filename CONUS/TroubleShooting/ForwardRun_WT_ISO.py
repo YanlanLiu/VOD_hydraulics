@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
 import sys; sys.path.append("../Utilities/")
-from newfun_full import readCLM
+from newfun import readCLM
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca,varnames
 from newfun import GetTrace

@@ -250,6 +250,7 @@ def AMIS(lik_fun,PREFIX,samplenum): # AMIS sampling without parallel tempering
             
             # Accept with calculated probability
             logA = (logp2-logp1)-(logq2-logq1)
+            print(logp1,logp2,logq1,logq2)
             if np.log(uniform.rvs())<logA:
                 acc = acc+1/(i+chunckid*niter+1)
                 theta = np.copy(theta_star)

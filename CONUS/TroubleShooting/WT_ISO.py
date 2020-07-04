@@ -242,9 +242,9 @@ if iso_flag>0:
             iso_hat = res.params[0]
             iso_flag = 1
         else: 
-            iso_hat = 0; iso_flag = 0
+            iso_hat = -999; iso_flag = 1
         loglik_iso = norm.logpdf(iso,iso_hat,iso*0.3)
-        return loglik_vod+loglik_et+loglik_iso*iso_flag
+        return (loglik_vod+loglik_et+loglik_iso*iso_flag)*(sum(valid_vod)+sum(valid_et))/2
 else:
     def Gaussian_loglik(theta0):
         theta = theta0*scale
@@ -259,7 +259,7 @@ else:
 
         if ~np.isfinite(loglik_vod): loglik_vod = -9999
         if ~np.isfinite(loglik_et): loglik_et = -9999
-        return loglik_vod+loglik_et    
+        return (loglik_vod+loglik_et)*(sum(valid_vod)+sum(valid_et))/2
 
 tic = time.perf_counter()
 AMIS(Gaussian_loglik,PREFIX,samplenum)

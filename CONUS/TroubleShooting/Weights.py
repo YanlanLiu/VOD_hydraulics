@@ -33,7 +33,7 @@ samplenum = (8,2000)
 #arrayid = 81 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (1,10) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/Weights/'
+versionpath = parentpath + 'TroubleShooting/Weights_tr/'
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
@@ -216,7 +216,7 @@ def Gaussian_loglik(theta0):
     loglik_et = np.nanmean(norm.logpdf(ET[valid_et],ET_hat[valid_et],sigma_ET))
     # if ~np.isfinite(loglik_vod): loglik_vod = -9999
     # if ~np.isfinite(loglik_et): loglik_et = -9999
-    return loglik_vod+loglik_et
+    return (loglik_vod+loglik_et)*(sum(valid_vod)+sum(valid_et))/2
 
 tic = time.perf_counter()
 AMIS(Gaussian_loglik,PREFIX,samplenum)

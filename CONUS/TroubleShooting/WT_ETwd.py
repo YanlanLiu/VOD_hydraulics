@@ -236,7 +236,7 @@ if ET_wd_flag>0:
         if ~np.isfinite(loglik_vod): loglik_vod = -9999
         if ~np.isfinite(loglik_et): loglik_et = -9999
         
-        return loglik_vod+loglik_et+loglik_et_wd
+        return (loglik_vod+loglik_et+loglik_et_wd)*(sum(valid_vod)+sum(valid_et))/2
 else:
     def Gaussian_loglik(theta0):
         theta = theta0*scale
@@ -251,7 +251,7 @@ else:
 
         if ~np.isfinite(loglik_vod): loglik_vod = -9999
         if ~np.isfinite(loglik_et): loglik_et = -9999
-        return loglik_vod+loglik_et    
+        return (loglik_vod+loglik_et)*(sum(valid_vod)+sum(valid_et))/2
 
 tic = time.perf_counter()
 AMIS(Gaussian_loglik,PREFIX,samplenum)
