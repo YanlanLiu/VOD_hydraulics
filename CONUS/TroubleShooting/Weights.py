@@ -25,15 +25,15 @@ from Utilities import MovAvg
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (8,2000)
+#baseid = 0 # int(sys.argv[1])
+#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+#samplenum = (8,2000)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 81 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (1,10) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/Weights_tr/'
+versionpath = parentpath + 'TroubleShooting/Weights_0/'
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'

@@ -219,12 +219,12 @@ upbound = np.array([10,1,15,10,23,10,1,3,0.3])
 scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
 bounds = (lowbound/scale, upbound/scale, scale)
 
-def AMIS(lik_fun,PREFIX,samplenum): # AMIS sampling without parallel tempering
+def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling without parallel tempering
     numchunck, niter = samplenum
     mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1)
     sigma = 0.5**2*np.identity(p)
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
-    r, power, K = (0.1, 0.1, 20) # hyper parameters
+    r, power, K = hyperpara # hyper parameters
 
 
     theta = AMIS_proposal((bounds[0]+bounds[1])/2,mu,sigma,tail_para,bounds)
@@ -250,7 +250,6 @@ def AMIS(lik_fun,PREFIX,samplenum): # AMIS sampling without parallel tempering
             
             # Accept with calculated probability
             logA = (logp2-logp1)-(logq2-logq1)
-            print(logp1,logp2,logq1,logq2)
             if np.log(uniform.rvs())<logA:
                 acc = acc+1/(i+chunckid*niter+1)
                 theta = np.copy(theta_star)
