@@ -240,7 +240,7 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         outname = PREFIX+'_'+str(chunckid).zfill(2)+'.pickle' 
         for i in range(niter):
             ii = ii+1#i+1+chunckid*niter
-            print(ii,i+1+chunckid*niter)
+            #print(ii,i+1+chunckid*niter)
             acc = acc*(ii-1)/ii
             # acc = acc*(i+chunckid*niter)/(i+1+chunckid*niter)
             # Propose a new sample
@@ -271,10 +271,10 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
                 mu = mu+rn*np.mean(sample[-K:]-mu,axis=0)
                 sigma = sigma+rn*(np.dot(np.transpose(sample[-K:]-mu),sample[-K:]-mu)/K-sigma)
                 det = np.linalg.det(sigma)
-                print(det)
+                print(acc,det)
                 if det<1e-48 or acc<0.02: mu,sigma,rn,acc,ii = sample_para0; print("restart..."); 
         
-            print('Acceptance rate: '+str(acc))
+        # print('Acceptance rate: '+str(acc))
         if acc>0.2: sample_para0 = (mu,sigma,rn,acc,ii)
         
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)

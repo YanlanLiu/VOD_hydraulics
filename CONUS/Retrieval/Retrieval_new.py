@@ -25,15 +25,15 @@ from Utilities import MovAvg
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
+baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (10,4000)
+samplenum = (10,3000)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 1 # 0-5, 10-15, 20-25, 30-35
+#arrayid = 81 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (3,10) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/MCMC1/'; hyperpara = (0.1,0.05,20)
+versionpath = parentpath + 'Retrieval_0705/'; hyperpara = (0.1,0.05,20)
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
@@ -41,10 +41,9 @@ MODE = 'AM_PM_ET'
 
 
 chains_per_site = 1
-
-fid = arrayid*1
+fid = int(arrayid/chains_per_site)
 chainid = int(fid-fid*chains_per_site)
-SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)
