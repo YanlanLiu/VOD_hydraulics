@@ -19,6 +19,7 @@ from newfun import OB,CONST,CLAPP,ca,varnames
 from newfun import GetTrace
 from Utilities import MovAvg, nanOLS
 import time
+import matplotlib.pyplot as plt
 
 # =========================== control pannel =============================
 
@@ -36,7 +37,7 @@ outpath = versionpath +'Output/'
 MODE = 'AM_PM_ET'
 SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
 
-for fid in range(40,50):
+for fid in range(10,12):
 
     sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
     PREFIX = outpath+MODE+'_'+sitename+'_'

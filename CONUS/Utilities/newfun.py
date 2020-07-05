@@ -25,6 +25,7 @@ import pandas as pd
 import glob
 import pickle
 import os
+from copy import copy
 
 UNIT_0 = 18e-6 # mol H2O/m2/s -> m/s H2O
 UNIT_1 = 1.6*UNIT_0 # mol CO2 /m2/s -> m/s, H2O
@@ -234,7 +235,7 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
     lik = [np.copy(logp1)]
     acc = 0; ii = 0
     
-    sample_para0 = (mu,sigma,rn,acc,ii)
+    sample_para0 = (mu,sigma,rn,acc,ii,theta,logp1) # for use of restart
     
     for chunckid in range(0,numchunck): 
         outname = PREFIX+'_'+str(chunckid).zfill(2)+'.pickle' 
@@ -258,32 +259,36 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
                 acc = acc+1/ii
                 theta = np.copy(theta_star)
                 logp1 = np.copy(logp2)
-        
-            # Save the sample for T = 1, i.e., the target distribution
-            sample = np.row_stack([sample,theta]) 
+            
+            sample = np.row_stack([sample,theta])
             lik = np.concatenate([lik,[logp1]])
             
-            
-            # Update proposal distribution
+             # Update proposal distribution
             if np.mod(i,K)==0:
                 rn = rn*((ii+1)/(ii+2))**power
                 # rn = r/((i+1+chunckid*niter)/K)**power
                 mu = mu+rn*np.mean(sample[-K:]-mu,axis=0)
-                sigma = sigma+rn*(np.dot(np.transpose(sample[-K:]-mu),sample[-K:]-mu)/K-sigma)
-                det = np.linalg.det(sigma)
-                print(acc,det)
-                if det<1e-48 or acc<0.02: mu,sigma,rn,acc,ii = sample_para0; print("restart..."); 
+                sigma = sigma+rn*(np.dot(np.transpose(sample[-K:]-mu),sample[-K:]-mu)/K-sigma)        
         
-        # print('Acceptance rate: '+str(acc))
-        if acc>0.2: sample_para0 = (mu,sigma,rn,acc,ii)
+        det = np.linalg.det(sigma)
+        print(acc,det)
         
+        if det<1e-48 or acc<0.02: mu,sigma,rn,acc,ii,theta,logp1 = sample_para0; print("restart...");
+        sample_para = (mu,sigma,rn,acc,ii,theta,logp1)
+
+
+        if acc>0.2: sample_para0 = copy(sample_para)
+
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
         sdf.to_pickle(outname)
         sample = sample[-1,:]
         lik = [lik[-1]]
-        with open(PREFIX+'_sample_para.pickle', 'wb') as f:
-            pickle.dump((mu,sigma,rn,acc,ii,sample_para0),f)
-            
+        with open(PREFIX+'_sample_para.pkl', 'wb') as f:
+            pickle.dump((sample_para,sample_para0),f)       
+        print(sample_para0[2],sample_para0[-1])
+        print(sample_para[2],sample_para[-1])
+        
+        
 
 MAX_STEP_TIME = 10 # sec
 def AMIS_proposal(theta,mu,sigma,tail_para,bounds):
