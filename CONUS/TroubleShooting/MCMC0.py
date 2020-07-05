@@ -24,17 +24,17 @@ from Utilities import MovAvg
 
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
-parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (10,4000)
+# parentpath = '/scratch/users/yanlan/'
+# baseid = 0 # int(sys.argv[1])
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+# samplenum = (10,4000)
 
-# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 1 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (1,10) # number of chuncks, number of samples per chunck
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 1 # 0-5, 10-15, 20-25, 30-35
+samplenum = (3,10) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'TroubleShooting/MCMC0/'; hyperpara = (0.2,0.1,20)
-
+# hyperpara = (0.2,0.1,20)
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'AM_PM_ET'

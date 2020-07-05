@@ -225,20 +225,24 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
     sigma = 0.5**2*np.identity(p)
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
     r, power, K = hyperpara # hyper parameters
-
+    rn = r/(1/K)**power
 
     theta = AMIS_proposal((bounds[0]+bounds[1])/2,mu,sigma,tail_para,bounds)
     logp1 = lik_fun(theta) 
     if np.isnan(logp1):logp1=-9999
     sample = np.copy(theta).reshape((-1,p))
     lik = [np.copy(logp1)]
-    acc = 0
+    acc = 0; ii = 0
+    
+    sample_para0 = (mu,sigma,rn,acc,ii)
     
     for chunckid in range(0,numchunck): 
         outname = PREFIX+'_'+str(chunckid).zfill(2)+'.pickle' 
         for i in range(niter):
-            acc = acc*(i+chunckid*niter)/(i+1+chunckid*niter)
-            
+            ii = ii+1#i+1+chunckid*niter
+            print(ii,i+1+chunckid*niter)
+            acc = acc*(ii-1)/ii
+            # acc = acc*(i+chunckid*niter)/(i+1+chunckid*niter)
             # Propose a new sample
             theta_star = AMIS_proposal(theta,mu,sigma,tail_para,bounds)
             
@@ -251,7 +255,7 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
             # Accept with calculated probability
             logA = (logp2-logp1)-(logq2-logq1)
             if np.log(uniform.rvs())<logA:
-                acc = acc+1/(i+chunckid*niter+1)
+                acc = acc+1/ii
                 theta = np.copy(theta_star)
                 logp1 = np.copy(logp2)
         
@@ -259,20 +263,27 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
             sample = np.row_stack([sample,theta]) 
             lik = np.concatenate([lik,[logp1]])
             
+            
             # Update proposal distribution
             if np.mod(i,K)==0:
-                rn = r/((i+1+chunckid*niter)/K)**power
+                rn = rn*((ii+1)/(ii+2))**power
+                # rn = r/((i+1+chunckid*niter)/K)**power
                 mu = mu+rn*np.mean(sample[-K:]-mu,axis=0)
                 sigma = sigma+rn*(np.dot(np.transpose(sample[-K:]-mu),sample[-K:]-mu)/K-sigma)
-                print(np.linalg.det(sigma))
+                det = np.linalg.det(sigma)
+                print(det)
+                if det<1e-48 or acc<0.02: mu,sigma,rn,acc,ii = sample_para0; print("restart..."); 
         
-        print('Acceptance rate: '+str(acc))
-        
+            print('Acceptance rate: '+str(acc))
+        if acc>0.2: sample_para0 = (mu,sigma,rn,acc,ii)
         
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
         sdf.to_pickle(outname)
         sample = sample[-1,:]
         lik = [lik[-1]]
+        with open(PREFIX+'_sample_para.pickle', 'wb') as f:
+            pickle.dump((mu,sigma,rn,acc,ii,sample_para0),f)
+            
 
 MAX_STEP_TIME = 10 # sec
 def AMIS_proposal(theta,mu,sigma,tail_para,bounds):
