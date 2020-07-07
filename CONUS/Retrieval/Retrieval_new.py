@@ -27,7 +27,7 @@ from Utilities import MovAvg
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (10,3000)
+samplenum = (15,2000)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 81 # 0-5, 10-15, 20-25, 30-35
