@@ -24,15 +24,15 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-nsites_per_id = 1
-warmup, nsample,thinning = (0.7,200,20)
+# parentpath = '/scratch/users/yanlan/'
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+# nsites_per_id = 1
+# warmup, nsample,thinning = (0.7,200,20)
 
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 62
-#nsites_per_id = 1
-#warmup, nsample,thinning = (0.7,2,20)
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 12
+nsites_per_id = 1
+warmup, nsample,thinning = (0.7,2,20)
 
 versionpath = parentpath + 'TroubleShooting/Weights_tr/'
 inpath = parentpath+ 'Input/'
@@ -255,8 +255,8 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]
     
    
-    forwardname = forwardpath+MODE+'_'+sitename+'.pkl'
-    with open(forwardname, 'wb') as f: pickle.dump((TS,PARA), f)
+    # forwardname = forwardpath+MODE+'_'+sitename+'.pkl'
+    # with open(forwardname, 'wb') as f: pickle.dump((TS,PARA), f)
     
     
     # ======== OBS stats ===========
@@ -275,9 +275,9 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
             OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
         else:
             OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
-        obsname = obspath+MODE+'_'+sitename+'.pkl'
-        with open(obsname, 'wb') as f: 
-            pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
+        # obsname = obspath+MODE+'_'+sitename+'.pkl'
+        # with open(obsname, 'wb') as f: 
+        #     pickle.dump((OBS_temporal_mean,OBS_temporal_std), f)
 
     # VOD,SOILM,ET,VODr_ampm,VODr_wd,ETr_wd,ISO = OBS_temporal_mean or OBS_temporal_std
     
@@ -307,9 +307,9 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     acc_en = [er2_vod,er2_et,er2_sm]
     p50_pct = [trace['psi50X'].quantile(pct) for pct in [.25,.5,.75]] 
     
-    accname = statspath+'R2_'+sitename+'.pkl'
-    with open(accname, 'wb') as f: 
-        pickle.dump((acc_en,r2_vod,r2_et,r2_sm,p50_pct,Geweke), f)
+    # accname = statspath+'R2_'+sitename+'.pkl'
+    # with open(accname, 'wb') as f: 
+    #     pickle.dump((acc_en,r2_vod,r2_et,r2_sm,p50_pct,Geweke), f)
     
     # ======== TS stats ============
     # np.apply_along_axis()
@@ -342,9 +342,9 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     # VOD,E,T,ET_AP,PSIL,S1,S2,VODr_ampm, ETr_ampm, VODr_wd, ETr_wd, ISO= TS_temporal_mean or TS_temporal_std
     
     
-    statsname = statspath+MODE+'_'+sitename+'.pkl'
-    with open(statsname, 'wb') as f: 
-        pickle.dump((TS_temporal_mean,TS_temporal_std,PARA_ensembel_mean,PARA_ensembel_std), f)
+    # statsname = statspath+MODE+'_'+sitename+'.pkl'
+    # with open(statsname, 'wb') as f: 
+    #     pickle.dump((TS_temporal_mean,TS_temporal_std,PARA_ensembel_mean,PARA_ensembel_std), f)
 
 toc = time.perf_counter()
 
@@ -352,6 +352,66 @@ toc = time.perf_counter()
 print(f"Running time (20 sites): {toc-tic:0.4f} seconds")
 
 
+#%%
+# plt.plot(SOILM)
+# plt.plot(dS1)
+# nanfilter = ~np.isnan(SOILM+dS1)
+# y = SOILM[nanfilter]; yhat = dS1[nanfilter]
+# bins = np.arange(0,1,0.01)
+# counts, bin_edges = np.histogram(y, bins=bins, normed=True)
+# cdf1 = np.cumsum(counts)/sum(counts)
+# counts, bin_edges = np.histogram(yhat, bins=bins, normed=True)
+# cdf2 = np.cumsum(counts)/sum(counts)
+
+# yhat = np.array([int(itm*100) for itm in yhat])
+# y = np.array([int(itm*100) for itm in y])
+
+# yhat_matched = np.array([bin_edges[np.abs(cdf1-cdf2[itm]).argmin()] for itm in yhat])
+
+# counts, bin_edges = np.histogram(yhat_matched, bins=bins, normed=True)
+# cdf3 = np.cumsum(counts)/sum(counts)
+
+
+# itm =yhat[100]
+# cdf2[itm]
+# bin_edges1[np.abs(cdf1-cdf2[itm]).argmin()] 
+
+# plt.plot(bin_edges[1:],cdf1)
+# plt.plot(bin_edges[1:],cdf2)
+# plt.plot(bin_edges[1:],cdf3)
+
+# plt.plot([itm/100,itm/100],[0,cdf2[itm]],'-k')
+# plt.plot([itm/100,bin_edges[np.abs(cdf1-cdf2[itm]).argmin()]],[cdf2[itm],cdf2[itm]],'-k')
+
+
+# plt.figure()
+# plt.plot(y/100)
+# plt.plot(yhat/100)
+# plt.plot(yhat_matched)
+
+
+#%%
+
+
+# def cdfmatching(y,yhat): # specifically for variables between 0 and 1 with resolution of .01
+#     bins = np.arange(0,1,0.01)
+#     counts, bin_edges = np.histogram(y, bins=bins, normed=True)
+#     cdf1 = np.cumsum(counts)/sum(counts)
+#     counts, bin_edges = np.histogram(yhat, bins=bins, normed=True)
+#     cdf2 = np.cumsum(counts)/sum(counts)
+        
+#     yhat_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in yhat])
+#     return yhat_matched
+
+# nanfilter = ~np.isnan(SOILM+dS1)
+
+# y = SOILM[nanfilter]; yhat = dS1[nanfilter]
+
+# yhat_matched = cdfmatching(y,yhat)
+# plt.figure()
+# plt.plot(y)
+# plt.plot(yhat)
+# plt.plot(yhat_matched)
 
 # %%
 # import matplotlib.pyplot as plt

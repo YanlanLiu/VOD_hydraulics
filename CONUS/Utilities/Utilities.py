@@ -146,3 +146,12 @@ def nanOLS(X,y):
     else:
         res = 0
     return res
+
+def cdfmatching(y,yhat): # specifically for variables between 0 and 1 with resolution of .01
+    bins = np.arange(0,1,0.01)
+    counts, bin_edges = np.histogram(y, bins=bins, normed=True)
+    cdf1 = np.cumsum(counts)/sum(counts)
+    counts, bin_edges = np.histogram(yhat, bins=bins, normed=True)
+    cdf2 = np.cumsum(counts)/sum(counts) 
+    yhat_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in yhat])
+    return yhat_matched
