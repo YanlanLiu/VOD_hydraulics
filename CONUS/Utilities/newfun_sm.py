@@ -273,11 +273,11 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         det = np.linalg.det(sigma)
         print(acc,det)
         
-        if det<1e-48 or acc<0.02: mu,sigma,rn,acc,ii,theta,logp1 = sample_para0; print("restart...");
+        if acc<0.002 or det<1e-100: mu,sigma,rn,acc,ii,theta,logp1 = sample_para0; print("restart...");
         sample_para = (mu,sigma,rn,acc,ii,theta,logp1)
 
 
-        if acc>0.2: sample_para0 = copy(sample_para)
+        if acc>0.1: sample_para0 = copy(sample_para)
 
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
         sdf.to_pickle(outname)
@@ -285,8 +285,8 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         lik = [lik[-1]]
         with open(PREFIX+'_sample_para.pkl', 'wb') as f:
             pickle.dump((sample_para,sample_para0),f)       
-        print(sample_para0[2],sample_para0[-1])
-        print(sample_para[2],sample_para[-1])
+#        print(sample_para0[2],sample_para0[-1])
+#        print(sample_para[2],sample_para[-1])
         
         
 

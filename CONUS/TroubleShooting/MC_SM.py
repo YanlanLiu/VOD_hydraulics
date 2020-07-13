@@ -222,16 +222,24 @@ def Gaussian_loglik(theta0):
     dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
     VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)[valid_vod]
     SM_hat = hour2day(SM_hat,idx)[~discard_vod][::2][valid_sm]
-    
-    counts, bin_edges = np.histogram(SM_hat, bins=bins, normed=True)
-    cdf2 = np.cumsum(counts)/sum(counts)    
-    SM_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in SM_hat])
-    
+
     sigma_VOD, sigma_ET, sigma_SM = (theta[idx_sigma_vod], theta[idx_sigma_et],theta[idx_sigma_sm])
     loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat,sigma_VOD))
     loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
-    loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
-    # print(loglik_vod,loglik_et,loglik_sm)
+
+    if np.isfinite(np.nansum(SM_hat)) and np.nansum(SM_hat)>0:
+        try:
+            counts, bin_edges = np.histogram(SM_hat, bins=bins, normed=True)
+        except ValueError:
+            print(ValueError)
+            print(np.nansum(SM_hat),np.nanmax(SM_hat))
+
+        cdf2 = np.cumsum(counts)/sum(counts)
+        SM_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in SM_hat])
+        loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
+    else:
+        loglik_sm = np.nan
+    
     return (loglik_vod+loglik_et+loglik_sm)/3*Nobs
 
 tic = time.perf_counter()
