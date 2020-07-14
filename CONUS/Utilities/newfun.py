@@ -220,6 +220,7 @@ upbound = np.array([10,1,15,10,23,10,1,3,0.3])
 scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
 bounds = (lowbound/scale, upbound/scale, scale)
 
+
 def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling without parallel tempering
     numchunck, niter = samplenum
     mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1)
@@ -227,18 +228,29 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
     r, power, K = hyperpara # hyper parameters
     rn = r/(1/K)**power
-
-    theta = AMIS_proposal((bounds[0]+bounds[1])/2,mu,sigma,tail_para,bounds)
-    logp1 = lik_fun(theta) 
-    if np.isnan(logp1):logp1=-9999
+    
+    paraname = glob.glob(PREFIX+'*.pkl')    
+    if len(paraname)>0:
+        with open(paraname[0],'rb') as f: sample_para,sample_para0 = pickle.load(f)
+        mu,sigma,rn,acc,ii,theta,logp1 = sample_para
+        outlist = glob.glob(PREFIX+'*.pickle')
+        chunck_idx = len(outlist[0])-9
+        chunckid0 = np.max([int(itm[chunck_idx:chunck_idx+2]) for itm in outlist])+1
+    else:
+        theta = AMIS_proposal((bounds[0]+bounds[1])/2,mu,sigma,tail_para,bounds)
+        logp1 = lik_fun(theta) 
+        if np.isnan(logp1):logp1=-9999
+        acc = 0; ii = 0
+        sample_para0 = (mu,sigma,rn,acc,ii,theta,logp1) # for use of restart
+        chunckid0 = 0
+    
     sample = np.copy(theta).reshape((-1,p))
     lik = [np.copy(logp1)]
-    acc = 0; ii = 0
-    sample_para0 = (mu,sigma,rn,acc,ii,theta,logp1) # for use of restart
     
-    for chunckid in range(0,numchunck): 
+    for chunckid in range(chunckid0,numchunck): 
         outname = PREFIX+'_'+str(chunckid).zfill(2)+'.pickle' 
         for i in range(niter):
+            print(logp1)
             ii = ii+1#i+1+chunckid*niter
             #print(ii,i+1+chunckid*niter)
             acc = acc*(ii-1)/ii
@@ -248,16 +260,16 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
             
             # Evalute likelihood
             logp2 = lik_fun(theta_star) # before tempering
-            if np.isnan(logp2):logp2=-9999
-            logq2 = AMIS_prop_loglik(theta_star,mu,sigma,tail_para)
-            logq1 = AMIS_prop_loglik(theta,mu,sigma,tail_para)
-            
-            # Accept with calculated probability
-            logA = (logp2-logp1)-(logq2-logq1)
-            if np.log(uniform.rvs())<logA:
-                acc = acc+1/ii
-                theta = np.copy(theta_star)
-                logp1 = np.copy(logp2)
+            if ~np.isnan(logp2):#logp2=-9999
+                logq2 = AMIS_prop_loglik(theta_star,mu,sigma,tail_para)
+                logq1 = AMIS_prop_loglik(theta,mu,sigma,tail_para)
+                
+                # Accept with calculated probability
+                logA = (logp2-logp1)-(logq2-logq1)
+                if np.log(uniform.rvs())<logA:
+                    acc = acc+1/ii
+                    theta = np.copy(theta_star)
+                    logp1 = np.copy(logp2)
             
             sample = np.row_stack([sample,theta])
             lik = np.concatenate([lik,[logp1]])

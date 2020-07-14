@@ -30,21 +30,24 @@ import matplotlib.pyplot as plt
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 
-TAG = 'MCMC1'
-versionpath = parentpath + 'TroubleShooting/'+TAG+'/'
+# TAG = 'MCMC1'
+# versionpath = parentpath + 'TroubleShooting/'+TAG+'/'
+versionpath = parentpath + 'Retrieval_0705/'
+
 outpath = versionpath +'Output/'
 
 MODE = 'AM_PM_ET'
-SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 
-for fid in range(10,12):
+for fid in range(0,2):
 
     sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
     PREFIX = outpath+MODE+'_'+sitename+'_'
     trace = GetTrace(PREFIX,0,optimal=False)
     plt.figure()
     plt.plot(trace['psi50X'])
-    plt.xlabel(TAG+', '+str(fid))
+    print(len(trace))
+    # plt.xlabel(TAG+', '+str(fid))
 # for v in varnames:
 #     plt.figure()
 #     plt.plot(trace[v])
