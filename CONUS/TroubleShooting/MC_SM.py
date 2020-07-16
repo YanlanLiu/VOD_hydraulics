@@ -228,11 +228,11 @@ def Gaussian_loglik(theta0):
     loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
 
     if np.isfinite(np.nansum(SM_hat)) and np.nansum(SM_hat)>0:
-        try:
-            counts, bin_edges = np.histogram(SM_hat, bins=bins, normed=True)
-        except ValueError:
-            print(ValueError)
-            print(np.nansum(SM_hat),np.nanmax(SM_hat))
+        # try:
+        counts, bin_edges = np.histogram(SM_hat, bins=bins, normed=True)
+        # except ValueError:
+        #     print(ValueError)
+        #     print(np.nansum(SM_hat),np.nanmax(SM_hat))
 
         cdf2 = np.cumsum(counts)/sum(counts)
         SM_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in SM_hat])

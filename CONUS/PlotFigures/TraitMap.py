@@ -19,7 +19,7 @@ from scipy.stats import norm,gamma
 from newfun import varnames
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-versionpath = parentpath + 'Retrieval_0510/'
+versionpath = parentpath + 'Retrieval_0705/'
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv').iloc[:14000]
 inpath = parentpath+'Input/'
 LOC = SiteInfo[['row','col']]
@@ -57,7 +57,7 @@ def plotMap(varray,vname,vmin=0,vmax=1):
     
 
 V25,V50,V75,MissingList = ReadSpatialStats(versionpath+'Traits/Traits_')
-R2,RMSE,CORR, MissingListR2 = ReadSpatialStats(versionpath+'R2/R2_')
+# R2,RMSE,CORR, MissingListR2 = ReadSpatialStats(versionpath+'R2/R2_')
 mLAI,mVOD,mET,N_VOD,N_ET = ReadSpatialStats(inpath+'Stats/Avg')
 
 #%%
@@ -92,8 +92,8 @@ plt.figure();plt.hist(SiteInfo['Soil texture'],density=True,alpha=0.5,bins=np.ar
 plt.figure();plt.hist(SiteInfo['Root type'],density=True,alpha=0.5,bins=np.arange(16));plt.hist(subset['Root type'],density=True,alpha=0.5,bins=np.arange(16))
 plt.figure();plt.hist(SiteInfo['Root depth'],density=True,alpha=0.5,bins=np.arange(16));plt.hist(subset['Root depth'],density=True,alpha=0.5,bins=np.arange(16))
 
-plt.figure();plt.hist(R2[:,1],density=True,alpha=0.5);plt.hist(R2[repsidx,1],density=True,alpha=0.5);plt.xlabel('R2_ET')
-plt.figure();plt.hist(R2[:,0],density=True,alpha=0.5);plt.hist(R2[repsidx,0],density=True,alpha=0.5);plt.xlabel('R2_VOD')
+# plt.figure();plt.hist(R2[:,1],density=True,alpha=0.5);plt.hist(R2[repsidx,1],density=True,alpha=0.5);plt.xlabel('R2_ET')
+# plt.figure();plt.hist(R2[:,0],density=True,alpha=0.5);plt.hist(R2[repsidx,0],density=True,alpha=0.5);plt.xlabel('R2_VOD')
 plt.figure();plt.hist(flatness,density=True,alpha=0.5);plt.hist(flatness[repsidx],density=True,alpha=0.5);plt.xlabel('P50 flatness')
 #%%
 
@@ -142,12 +142,12 @@ for arrayid in range(14):
     array_range = np.arange(arrayid*1000,(arrayid+1)*1000)
     ValidN[array_range,:] =  vn[array_range,:]
     # plt.figure();plt.plot(vn[:,1])
-    r2anme = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
-    with open(r2anme, 'rb') as f: 
-        r2,rmse,corr, MissingListR2 = pickle.load(f)
-    R2 = np.concatenate([R2,r2],axis=0)
-    RMSE = np.concatenate([RMSE,rmse],axis=0)
-    CORR = np.concatenate([CORR,corr],axis=0)
+    # r2anme = r2path+'R2_'+str(arrayid)+'_1E3.pkl'
+    # with open(r2anme, 'rb') as f: 
+    #     r2,rmse,corr, MissingListR2 = pickle.load(f)
+    # R2 = np.concatenate([R2,r2],axis=0)
+    # RMSE = np.concatenate([RMSE,rmse],axis=0)
+    # CORR = np.concatenate([CORR,corr],axis=0)
 
 
 Acc = pd.DataFrame(np.column_stack([R2,RMSE,CORR]),columns=['R2_VOD','R2_ET','RMSE_VOD','RMSE_ET','r_VOD','r_ET'])
@@ -203,7 +203,7 @@ df = df[df['obsfilter']==1]
 # plt.hist(df['N_VOD'])
 
 #%%
-varname = 'lpx'
+varname = 'psi50X'
 # varname='IGBP'
 # if df[varname].mean()>0:df[varname] = -df[varname]
 lat,lon = LatLon(np.array(df['row']),np.array(df['col']))
@@ -330,7 +330,7 @@ plt.ylim([0,.8])
 varname = 'psi50X'
 # varname='IGBP'
 # Trait = pd.DataFrame((V75-V25)/7,columns=varlist)
-Trait = pd.DataFrame(V25,columns=varlist)
+Trait = pd.DataFrame(V50,columns=varlist)
 
 Acc = pd.DataFrame(R2,columns=['R2_VOD','R2_ET'])
 VN = pd.DataFrame(ValidN,columns=['N_VOD','N_ET'])
@@ -403,7 +403,6 @@ plt.ylabel(varname,rotation=360,labelpad=20)
 handles, labels = ax1.get_legend_handles_labels()
 plt.legend(handles[::-1], labels[::-1],loc=3,ncol=2)
 # plt.ylim([0,1.1])
-
 #%%
 varname = 'gpmax'
 # varname='IGBP'

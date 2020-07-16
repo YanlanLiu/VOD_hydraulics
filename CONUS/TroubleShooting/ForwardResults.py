@@ -17,21 +17,21 @@ import pickle
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.5)
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-TAG = 'SMslope'#'Control'
+TAG = 'MC_ETwd'#'Control'
 versionpath = parentpath + 'TroubleShooting/'+TAG+'/'
 statspath = versionpath+'STATS/'
 obspath = versionpath+'../OBS_STATS/'
 MODE = 'AM_PM_ET'
-SiteInfo = pd.read_csv('SiteInfo_reps.csv')
+SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
 
-Nsample = 100
+Nsample = 50
 varlist = ['VOD','S1','ET',r'VOD$_{p/a}$',r'VOD$_{w/d}$',r'ET$_{w/d}$','ISO']
 p = len(varlist)
 BIAS = np.zeros([p,Nsample])
 CVE = np.zeros([p,Nsample])
 mLAI =  np.zeros([Nsample,])
 
-acclist =[r'R$^2_{VOD}$',r'R$^2_{ET}$',r'R$^2_{SM}$',r'P50$_{flt}$']
+acclist =[r'R$^2_{VOD}$',r'R$^2_{ET}$',r'R$^2_{SM}$',r'P50$_{flt}$','Geweke']
 ACC = np.zeros([len(acclist),Nsample])
 ACC1 = np.zeros([len(acclist),Nsample])
 for fid in set(range(Nsample)):#-set([12,13]):
@@ -42,7 +42,7 @@ for fid in set(range(Nsample)):#-set([12,13]):
     with open(statspath+MODE+'_'+sitename+'.pkl' , 'rb') as f: 
         TS_temporal_mean,TS_temporal_std,PARA_ensembel_mean,PARA_ensembel_std = pickle.load(f)    
     with open(statspath+'R2_'+sitename+'.pkl', 'rb') as f: 
-        r2_vod,r2_et,r2_sm,p50_pct = pickle.load(f)
+        accen, r2_vod,r2_et,r2_sm,p50_pct, Geweke = pickle.load(f)
     TS_temporal_mean[4][TS_temporal_mean[4]<-15] = np.nan
     TSmm = np.array([np.mean(itm[np.isfinite(itm)]) for itm in TS_temporal_mean])
     TSmstd = np.array([np.abs(np.nanmean(TS_temporal_std[i]/TS_temporal_mean[i])) for i in range(len(TS_temporal_mean))])
@@ -72,7 +72,7 @@ for fid in set(range(Nsample)):#-set([12,13]):
     # plt.ylabel('Diff. to Obs.')
     BIAS[:,fid] = TSm/OBSm-1
     CVE[:,fid] = TScve
-    ACC[:,fid] = np.array([max(r2_vod),max(r2_et),max(r2_sm),(p50_pct[2]-p50_pct[0])/7.5])
+    ACC[:,fid] = np.array([max(r2_vod),max(r2_et),max(r2_sm),(p50_pct[2]-p50_pct[0])/7.5,np.nanpercentile(Geweke,25)])
     
     summary_name = './Summary_'+TAG+'.pkl'
     with open(summary_name,'wb') as f: pickle.dump((BIAS,CVE,ACC,mLAI),f)
@@ -99,7 +99,7 @@ plt.xlabel('Pixels')
 plt.figure(figsize=(6,4))
 sns.heatmap(ACC[:,tmpfilter],vmin=-1,vmax=1,cmap='RdBu')
 plt.xticks([])
-plt.yticks(np.arange(4)+0.5,acclist,rotation=0)
+plt.yticks(np.arange(len(acclist))+0.5,acclist,rotation=0)
 plt.title('Accuracy and flatness')  
 plt.xlabel('Pixels')
 
