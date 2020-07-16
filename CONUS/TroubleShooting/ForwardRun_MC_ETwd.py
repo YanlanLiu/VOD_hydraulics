@@ -225,6 +225,11 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     wwet = (wSOILM>np.nanpercentile(wSOILM,70)) & (wVPD<np.nanpercentile(wVPD,30)) # per week
     wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
 
+    valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
+    bins = np.arange(0,1.02,0.01)
+    counts, bin_edges = np.histogram(SOILM_valid, bins=bins, normed=True)
+    cdf1 = np.cumsum(counts)/sum(counts)
+
 
     for count in range(nsample):
         print(count)
@@ -247,8 +252,16 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True) 
         dS1 = hour2day(S1_hat,idx)[~discard_vod][::2]
         dS2 = hour2day(S2_hat,idx)[~discard_vod][::2]
+        
+        if np.isfinite(np.nansum(dS1)) and np.nansum(dS1)>0:
+            counts, bin_edges = np.histogram(dS1, bins=bins, normed=True)
+            cdf2 = np.cumsum(counts)/sum(counts)
+            dS1_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in dS1])
+        else:
+            dS1_matched = np.zeros(dS1.shape)+np.nan
+            
 
-        TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,E_hat,T_hat,ET_ampm,PSIL_hat,dS1,dS2))]
+        TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,E_hat,T_hat,ET_ampm,PSIL_hat,dS1_matched,dS2))]
         PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta))]
     
     TS = [np.reshape(itm,[nsample,-1]) for itm in TS] # VOD,E,T,ET_AP,PSIL,S1,S2
