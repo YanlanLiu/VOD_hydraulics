@@ -37,9 +37,9 @@ samplenum = (20,2000)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 42 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,60) # number of chuncks, number of samples per chunck
+#samplenum = (3,20) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/MC_Slope/'; hyperpara = (0.1,0.05,20)
+versionpath = parentpath + 'TroubleShooting/MC_Slope/'; hyperpara = (0.05,0.05,20)
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
@@ -246,7 +246,7 @@ def Gaussian_loglik(theta0):
         loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
     else:
         loglik_sm = np.nan
-    print(loglik_vod,loglik_et,loglik_sm)
+#    print(loglik_vod,loglik_et,loglik_sm)
     return (loglik_vod+loglik_et+loglik_sm)/3*Nobs
 
 tic = time.perf_counter()
