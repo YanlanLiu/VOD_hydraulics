@@ -24,7 +24,7 @@ nsites_per_id = 1000
 #arrayid = 1
 #nsites_per_id = 1
 
-versionpath = parentpath + 'Retrieval_0705/'
+versionpath = parentpath + 'ISO_0715/'
 outpath = versionpath+'Output/'
 traitpath = versionpath+'Traits/'
 varlist = ['g1','lpx','psi50X','gpmax','C','bexp','bc']

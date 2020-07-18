@@ -208,7 +208,7 @@ varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','slope','sigma_et','sigm
 
 p = int(len(varnames)-1)
 lowbound = np.array([0,0,0,0,0,1.5,0,0,0,0,0])
-upbound = np.array([10,1,15,10,23,10,1,5,3,0.3,0.3])
+upbound = np.array([10,1,12,10,23,10,1,5,3,0.3,0.3])
 scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
 bounds = (lowbound/scale, upbound/scale, scale)
 
@@ -238,20 +238,20 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
             # acc = acc*(i+chunckid*niter)/(i+1+chunckid*niter)
             # Propose a new sample
             theta_star = AMIS_proposal(theta,mu,sigma,tail_para,bounds)
-            
+
             # Evalute likelihood
             logp2 = lik_fun(theta_star) # before tempering
-            if ~np.isfinite(logp2):logp2=-9999
-            logq2 = AMIS_prop_loglik(theta_star,mu,sigma,tail_para)
-            logq1 = AMIS_prop_loglik(theta,mu,sigma,tail_para)
-            
+            logq2,singular = AMIS_prop_loglik(theta_star,mu,sigma,tail_para)
+            if np.isfinite(logp2) and singular==False:
+                logq1,singular1 = AMIS_prop_loglik(theta,mu,sigma,tail_para)
+
             # Accept with calculated probability
-            logA = (logp2-logp1)-(logq2-logq1)
-            if np.log(uniform.rvs())<logA:
-                acc = acc+1/ii
-                theta = np.copy(theta_star)
-                logp1 = np.copy(logp2)
-            
+                logA = (logp2-logp1)-(logq2-logq1)
+                if np.log(uniform.rvs())<logA:
+                    acc = acc+1/ii
+                    theta = np.copy(theta_star)
+                    logp1 = np.copy(logp2)
+
             sample = np.row_stack([sample,theta])
             lik = np.concatenate([lik,[logp1]])
             
@@ -265,7 +265,7 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         det = np.linalg.det(sigma)
         print(acc,det)
         
-        if acc<0.002 or det<1e-100: mu,sigma,rn,acc,ii,theta,logp1 = sample_para0; print("restart...");
+        if acc<0.01 or det<1e-100: mu,sigma,rn,acc,ii,theta,logp1 = sample_para0; print("restart...");
         sample_para = (mu,sigma,rn,acc,ii,theta,logp1)
 
 
@@ -303,8 +303,10 @@ def AMIS_proposal(theta,mu,sigma,tail_para,bounds):
 
 def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     mu0,sigma0,ll = tail_para
-    return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+multivariate_normal.pdf(theta,mu,sigma)*(1-ll))
-
+    p2 = multivariate_normal.pdf(theta,mu,sigma,allow_singular=True)
+    singular = False
+    if p2==1: p2 = 0;singular=True
+    return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)), singular
 
 
 def GetTrace(PREFIX,warmup,optimal=False):
