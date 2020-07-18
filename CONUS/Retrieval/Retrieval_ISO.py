@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul  7 14:03:53 2020
+Created on Sun Jun 21 20:40:25 2020
 
 @author: yanlan
+Continue sampling
+Same as control but using equal weights for each catogory of VOD and ET rather than each data point
 """
 
 
@@ -19,34 +21,40 @@ from newfun import varnames,scale,dt, hour2day, hour2week
 from newfun import OB,CONST,CLAPP,ca
 from Utilities import MovAvg
 # np.random.seed(seed=123)
+
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
-baseid = 0 # int(sys.argv[1])
+baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (30,2000)
+samplenum = (15,2000)
 
-# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 1 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,10) # number of chuncks, number of samples per chunck
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 2 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (2,20) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/MC_ISO2/'; hyperpara = (0.1,0.05,20)
+versionpath = parentpath + 'ISO_0715/'; hyperpara = (0.1,0.05,20)
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'AM_PM_ET'
 
 chains_per_site = 1
-
-fid = arrayid*1
+fid = int(arrayid/chains_per_site)
 chainid = int(fid-fid*chains_per_site)
-SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
+SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)
 
-# =========================== read input =================================
 #%%
+# from glob import glob
+# glob(PREFIX+'*')
+
+
+#%%
+# =========================== read input =================================
+
 Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 
 VOD_ma = np.reshape(VOD,[-1,2])
@@ -156,8 +164,7 @@ def runhh_2soil_hydro(theta):
     s2 = np.copy(sinit) 
     phiL = phi0*(s2/n)**(-bexp) - 0.01
     
-    s1_list = np.zeros([N,]); 
-    # s2_list = np.zeros([N,])
+    # s1_list = np.zeros([N,]); s2_list = np.zeros([N,])
     # e_list = np.zeros([N,]); t_list = np.zeros([N,])
 
     for i in np.arange(N):
@@ -192,10 +199,10 @@ def runhh_2soil_hydro(theta):
         s2 = min(max(s2+f12/d2 - f23/d2,0.05),n)  
             
         et_list[i] = ei+ti
-        s1_list[i] = np.copy(s1)
+        # s1_list[i] = np.copy(s1); s2_list[i] = np.copy(s2)
         # e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
-    s1_list[np.isnan(s1_list)] = np.nanmean(s1_list); s1_list[s1_list>1] = 1; s1_list[s1_list<0] = 0
-    return phil_list,et_list,s1_list #,s1_list,s2_list,e_list,t_list
+    
+    return phil_list,et_list #,s1_list,s2_list,e_list,t_list
 
 #%%
 # ========================== MCMC sampling ==============================  
@@ -211,31 +218,30 @@ Nobs = (sum(valid_vod)+sum(valid_et))/2
 from Utilities import nanOLS
 res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
 
-#%%
 if res!=0:
     iso = res.params[0]
     def Gaussian_loglik(theta0):
         theta = theta0*scale
-        PSIL_hat,ET_hat,SM_hat = runhh_2soil_hydro(theta)
+        PSIL_hat,ET_hat = runhh_2soil_hydro(theta)
         ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
         dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
         VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)
         sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
         loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat[valid_vod],sigma_VOD))
         loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat[valid_et],sigma_ET))
-        
+
         res_hat = nanOLS(np.column_stack([VOD_hat[::2],dLAI[::2]]), VOD_hat[1::2])
-        if res_hat!=0: 
+        if res_hat!=0:
             iso_hat = res_hat.params[0]
             loglik_iso = norm.logpdf(iso,iso_hat,iso*0.5)
-        else: 
+        else:
             loglik_iso = np.nan
-            
+
         return (loglik_vod+loglik_et+loglik_iso)*Nobs
 else:
     def Gaussian_loglik(theta0):
         theta = theta0*scale
-        PSIL_hat,ET_hat,SM_hat = runhh_2soil_hydro(theta)
+        PSIL_hat,ET_hat = runhh_2soil_hydro(theta)
         ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et][valid_et] # mm/hr -> mm/day
         dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
         VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)[valid_vod]
@@ -244,8 +250,6 @@ else:
         loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
         # print(loglik_vod,loglik_et)
         return (loglik_vod+loglik_et)*Nobs
-
-
 
 
 tic = time.perf_counter()
@@ -265,4 +269,3 @@ print(f"Sampling time (10 samples): {toc-tic:0.4f} seconds")
 # plt.figure();plt.plot(t_list);plt.ylabel('t')
 # plt.figure();plt.plot(s1_list);plt.ylabel('s1')
 # plt.figure();plt.plot(s2_list);plt.ylabel('s2')
-

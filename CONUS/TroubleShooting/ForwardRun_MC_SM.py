@@ -27,14 +27,14 @@ tic = time.perf_counter()
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
 nsites_per_id = 1
-warmup, nsample,thinning = (0.7,200,50)
+warmup, nsample,thinning = (0.8,200,50)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 2
 #nsites_per_id = 1
 #warmup, nsample,thinning = (0.7,2,20)
 
-versionpath = parentpath + 'TroubleShooting/MC_SM/'
+versionpath = parentpath + 'TroubleShooting/MC_SM2/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath +'Output/'
 #outpath =  parentpath + 'Retrieval_0510/Output/'
@@ -200,7 +200,9 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
             
             s1_list[i] = np.copy(s1); s2_list[i] = np.copy(s2)
             e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
-        
+
+        s1_list[np.isnan(s1_list)] = np.nanmean(s1_list); s1_list[s1_list>1] = 1; s1_list[s1_list<0] = 0
+ 
         return phil_list,e_list,t_list,s1_list,s2_list
     
 

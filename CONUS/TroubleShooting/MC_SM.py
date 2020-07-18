@@ -25,13 +25,13 @@ from Utilities import MovAvg
 parentpath = '/scratch/users/yanlan/'
 baseid = 0 # int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (20,2000)
+samplenum = (30,2000)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 1 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (3,10) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'TroubleShooting/MC_SM/'; hyperpara = (0.05,0.05,20)
+versionpath = parentpath + 'TroubleShooting/MC_SM2/'; hyperpara = (0.1,0.05,20)
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
