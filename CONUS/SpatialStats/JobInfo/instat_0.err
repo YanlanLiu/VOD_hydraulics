@@ -1,0 +1,13 @@
+../Utilities/Utilities.py:128: RuntimeWarning: invalid value encountered in greater
+  tmp[np.abs(tmp-np.nanmean(tmp))>2*np.nanstd(tmp)] = np.nan
+InputStats.py:45: RuntimeWarning: Mean of empty slice
+  mET[i] = np.nanmean(ET)
+../Utilities/Utilities.py:136: RuntimeWarning: invalid value encountered in greater
+  tmp[np.abs(anomaly-np.nanmean(anomaly))>2*np.nanstd(anomaly)] = np.nan
+../Utilities/newfun.py:64: RuntimeWarning: divide by zero encountered in true_divide
+  GA = np.array(df['Qh_tavg'])/Cpmol/(np.array(df['AvgSurfT_inst'])-np.array(df['Tair_f_inst']))*0.02405  #mol/m2/s to m/s
+../Utilities/Utilities.py:128: RuntimeWarning: Mean of empty slice
+  tmp[np.abs(tmp-np.nanmean(tmp))>2*np.nanstd(tmp)] = np.nan
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/nanfunctions.py:1434: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  keepdims=keepdims)
+/var/spool/slurmd/job2832913/slurm_script: line 19: /home/users/yanlan: Is a directory

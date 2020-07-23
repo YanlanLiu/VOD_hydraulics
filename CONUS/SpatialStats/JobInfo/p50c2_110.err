@@ -1,0 +1,37 @@
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3183: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[:, None]
+/home/users/yanlan/anaconda3/lib/python3.6/site-packages/numpy/lib/function_base.py:3184: RuntimeWarning: invalid value encountered in true_divide
+  c /= stddev[None, :]
+/var/spool/slurmd/job2778355/slurm_script: line 19: /home/users/yanlan: Is a directory

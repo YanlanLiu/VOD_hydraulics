@@ -17,7 +17,7 @@ import pickle
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.5)
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-TAG = 'MC_ETwd'#'Control'
+TAG = 'MC_SM'#'Control'
 versionpath = parentpath + 'TroubleShooting/'+TAG+'/'
 statspath = versionpath+'STATS/'
 obspath = versionpath+'../OBS_STATS/'

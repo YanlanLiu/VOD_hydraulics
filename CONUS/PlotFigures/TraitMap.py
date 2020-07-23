@@ -19,7 +19,7 @@ from scipy.stats import norm,gamma
 from newfun import varnames
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-versionpath = parentpath + 'Retrieval_0705/'
+versionpath = parentpath + 'ISO_0715/'
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv').iloc[:14000]
 inpath = parentpath+'Input/'
 LOC = SiteInfo[['row','col']]
@@ -61,8 +61,8 @@ V25,V50,V75,MissingList = ReadSpatialStats(versionpath+'Traits/Traits_')
 mLAI,mVOD,mET,N_VOD,N_ET = ReadSpatialStats(inpath+'Stats/Avg')
 
 #%%
-plotMap((V75[:,2]-V25[:,2])/7.5,varnames[2],vmin=0,vmax=1)
-plotMap(R2[:,1],'R2_ET',vmin=0,vmax=1)
+# plotMap((V75[:,2]-V25[:,2])/7.5,varnames[2],vmin=0,vmax=1)
+# plotMap(R2[:,1],'R2_ET',vmin=0,vmax=1)
 # plotMap(mLAI,'LAI',vmin=0,vmax=3)
 # plotMap(mVOD,'VOD',vmin=0,vmax=1)
 # sum((R2[:,1]<0.1) & (mLAI<0.5))/sum((R2[:,1]<0.1))
@@ -198,11 +198,21 @@ df = pd.concat([SiteInfo,Acc,VN,PC],axis=1)
 
 # c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
 # df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>50) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
-df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
-df = df[df['obsfilter']==1]
+# df['obsfilter'] = (df['N_VOD']>10)*(df['N_ET']>2)*1 # to be used
+# df = df[df['obsfilter']==1]
 # plt.hist(df['N_VOD'])
 
 #%%
+# Trait = pd.DataFrame((V75-V25)/V50,columns=varlist)
+# df = pd.concat([SiteInfo,Trait,VN],axis=1)
+# # df = pd.concat([SiteInfo,Trait,VN],axis=1)
+
+# # c4filter = [(igbp in [10,12]) for igbp in df['IGBP']]
+# # df['lcfilter'] =(np.array(c4filter)*(df['C4frac']<=0) + (df['C4frac']>50) + (df['IGBP']==11)+(df['IGBP']==0)+(df['IGBP']>12))*1# to be removed
+# df['obsfilter'] = (df['N_VOD']>10) & (df['N_ET']>2)*1 # to be used
+# df = df[df['obsfilter']==1]
+
+
 varname = 'psi50X'
 # varname='IGBP'
 # if df[varname].mean()>0:df[varname] = -df[varname]

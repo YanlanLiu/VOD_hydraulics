@@ -181,10 +181,6 @@ def hour2week(ET,UNIT=UNIT_4):
     weeklyfilter = np.ones([ndays,])
     DOY = np.array([(start_date+timedelta(i)).timetuple().tm_yday for i in range(ndays)])
     weeklyfilter[0] = 0; weeklyfilter[(DOY==1)+(DOY==366)] = 0
-    # for y in np.arange(start_date.year,end_date.year):
-    #     if y == start_date.year:
-    #     idx = (datetime(y,1,1)-datetime(yrange[0],1,1)).days
-    #     weeklyfilter[np.arange(idx+1,idx+1+52*7)] = 1
     weeklyfilter = np.repeat(weeklyfilter,nobsinaday)[:len(ET)]
     
     ET = dailyAvg(ET[weeklyfilter==1],nobsinaday*7)*UNIT # mmol/m2/s -> mm/day
@@ -200,6 +196,8 @@ def RMSE_VOD(x,psil,lai,vod):
 para0 = [0.3,0.64,0.04]
 bounds_vod = ((0,50),(0,20),(0,50))
 
+
+
 def fitVOD_RMSE(PSIL,LAI,VOD,return_popt=False):
     try:        
         res = optimize.minimize(RMSE_VOD,para0,args = (PSIL,LAI,VOD), bounds = bounds_vod)
@@ -212,18 +210,27 @@ def fitVOD_RMSE(PSIL,LAI,VOD,return_popt=False):
         return VOD_fitted
 
 #%% MCMC functions
-varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_vod','loglik']
 
-p = int(len(varnames)-1)
-lowbound = np.array([0,0,0,0,0,1.5,0,0,0])
-upbound = np.array([10,1,12,10,23,10,1,3,0.3])
-scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
-bounds = (lowbound/scale, upbound/scale, scale)
+def get_var_bounds(MODE):
+    if MODE=='VOD_ET' or MODE=='VOD_ET_ISO':
+        varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_vod','loglik']
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,3,0.3])
+    elif MODE=='VOD_SM' or MODE=='VOD_SM_ISO':
+        varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_sm','sigma_vod','loglik']
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,0.3,0.3])
+    elif MODE=='VOD_SM_ET' or MODE=='VOD_SM_ET_ISO':
+        varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_sm','sigma_vod','loglik']
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,3,0.3,0.3])
+    scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
+    bounds = (lowbound/scale, upbound/scale, scale)
+    return varnames, bounds
 
-
-def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling without parallel tempering
+def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,0.05,20)): # AMIS sampling without parallel tempering
     numchunck, niter = samplenum
-    mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1)
+    p = int(len(varnames)-1)
+    lowbound, upbound,scale = bounds
+    
+    mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1); mu[2] = p50_init
     sigma = 0.5**2*np.identity(p)
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
     r, power, K = hyperpara # hyper parameters
@@ -237,13 +244,14 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         chunck_idx = len(outlist[0])-9
         chunckid0 = np.max([int(itm[chunck_idx:chunck_idx+2]) for itm in outlist])+1
     else:
-        theta = AMIS_proposal((bounds[0]+bounds[1])/2,mu,sigma,tail_para,bounds)
+        theta = AMIS_proposal((lowbound+upbound)/2,mu,sigma,tail_para,bounds)
         logp1 = lik_fun(theta) 
         if np.isnan(logp1):logp1=-9999
         acc = 0; ii = 0
         sample_para0 = (mu,sigma,rn,acc,ii,theta,logp1) # for use of restart
         chunckid0 = 0
     
+    print(logp1)
     sample = np.copy(theta).reshape((-1,p))
     lik = [np.copy(logp1)]
     
@@ -300,7 +308,7 @@ def AMIS(lik_fun,PREFIX,samplenum,hyperpara = (0.1,0.1,20)): # AMIS sampling wit
         
         
 
-MAX_STEP_TIME = 10 # sec
+MAX_STEP_TIME = 5 # sec
 def AMIS_proposal(theta,mu,sigma,tail_para,bounds):
     lowbound, upbound,scale = bounds
     mu0,sigma0,ll = tail_para
@@ -329,7 +337,7 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)),singular
 
 
-def GetTrace(PREFIX,warmup,optimal=False):
+def GetTrace(PREFIX,varnames,warmup,optimal=False):
     outlist = sorted(glob.glob(PREFIX+'*.pickle'))
     chain_idx = len(outlist[0])-12; chunck_idx = len(outlist[0])-9
     chainlist = np.unique([int(itm[chain_idx:chain_idx+2]) for itm in outlist])  
@@ -356,18 +364,18 @@ def GetTrace(PREFIX,warmup,optimal=False):
         trace_df = trace_df[trace_df['chain']==chainlist[optimalid]].reset_index()
     return trace_df
 
-def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):
-    forwardname = forwardpath+MODE+sitename+'.pkl'
-    PREFIX = outpath+MODE+sitename+'_' 
-    flist = glob.glob(PREFIX+'*.pickle')
-    if os.path.isfile(forwardname) and len(flist)>5:
-        with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
-            SVOD, SET, SPSIL,SPOPT = pickle.load(f)
-        trace = GetTrace(PREFIX,0,optimal=False)
-        trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
-        theta = np.flipud(np.array(trace[varnames][-nsample:]))
-        paras = pd.DataFrame(theta,columns=varnames)
-        paras['a'] = SPOPT[:,0]; paras['b'] = SPOPT[:,1]; paras['c'] = SPOPT[:,2] #(1 + a*psil)*(b + c*lai)
-    else: 
-        paras = []
-    return paras #SVOD,SET,SPSIL,paras
+# def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):
+#     forwardname = forwardpath+MODE+sitename+'.pkl'
+#     PREFIX = outpath+MODE+sitename+'_' 
+#     flist = glob.glob(PREFIX+'*.pickle')
+#     if os.path.isfile(forwardname) and len(flist)>5:
+#         with open(forwardname,'rb') as f:  # Python 3: open(..., 'rb')
+#             SVOD, SET, SPSIL,SPOPT = pickle.load(f)
+#         trace = GetTrace(PREFIX,0,optimal=False)
+#         trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
+#         theta = np.flipud(np.array(trace[varnames][-nsample:]))
+#         paras = pd.DataFrame(theta,columns=varnames)
+#         paras['a'] = SPOPT[:,0]; paras['b'] = SPOPT[:,1]; paras['c'] = SPOPT[:,2] #(1 + a*psil)*(b + c*lai)
+#     else: 
+#         paras = []
+#     return paras #SVOD,SET,SPSIL,paras
