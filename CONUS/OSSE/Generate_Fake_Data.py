@@ -48,6 +48,8 @@ MODE = 'AM_PM_ET'
 outpath = parentpath+'Retrieval_0705/Output/'
 varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_vod','loglik']
 
+
+    
 #%%
 
 for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
@@ -55,7 +57,6 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
     PREFIX = outpath+MODE+'_'+sitename+'_'
     print(fid)
-    # print(PREFIX)
     
     Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
     
@@ -209,6 +210,16 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     trace = trace[trace['step']>trace['step'].max()*0.8].reset_index().drop(columns=['index'])
     # print(trace.mean())
     theta = np.array(trace[varnames[:-1]].mean())
+    
+    if SiteInfo.iloc[fid]['IGBP']==1:
+        p50_range = [2,12]
+    elif SiteInfo.iloc[fid]['IGBP']>9:
+        p50_range = [0.3,4]
+    else:
+        p50_range = [0.5,5]
+    if theta[2]<p50_range[0] or theta[2]>p50_range[1]:
+        theta[2] = np.random.uniform(p50_range[0],p50_range[1])
+    print(SiteInfo.iloc[fid]['IGBP'],theta[2])
     
     PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
     

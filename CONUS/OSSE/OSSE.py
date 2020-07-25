@@ -23,15 +23,15 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/'
+# parentpath = '/scratch/users/yanlan/'
 #baseid = int(sys.argv[1])#
 #arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
 #samplenum = (30,2000)
-
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+# 
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 baseid = 1
-arrayid = 33 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,10) # number of chuncks, number of samples per chunck
+arrayid = 34 # 0-5, 10-15, 20-25, 30-35
+samplenum = (3,100) # number of chuncks, number of samples per chunck
 
 hyperpara = (0.1,0.05,20)
 datapath = parentpath + 'OSSE/FakeData/'; 
@@ -44,8 +44,8 @@ elif baseid==2:
     versionpath = parentpath + 'OSSE/High/'; noise_level = 1.2
 
 inpath = parentpath+'Input/'
-outpath = versionpath+'Output/'
-
+# outpath = versionpath+'Output/'
+outpath='./Output/'
 
 MODE_list = ['VOD_ET','VOD_ET_ISO','VOD_SM','VOD_SM_ISO','VOD_SM_ET','VOD_SM_ET_ISO']
 
