@@ -32,12 +32,12 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/OSSE2/'
+parentpath = '/scratch/users/yanlan/OSSE3/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
 warmup, nsample,thinning = (0.8,200,50)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/OSSE2/'
-#arrayid = 54
+#arrayid = 58
 #warmup, nsample,thinning = (0.8,2,20)
 
 

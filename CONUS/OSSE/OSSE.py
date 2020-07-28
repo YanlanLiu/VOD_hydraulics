@@ -10,6 +10,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+from scipy.stats import genextreme as gev
 import warnings; warnings.simplefilter("ignore")
 import time
 import sys; sys.path.append("../Utilities/")
@@ -29,20 +30,21 @@ arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
 samplenum = (30,2000)
  
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#baseid = 0
-#arrayid = 34 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,100) # number of chuncks, number of samples per chunck
+#baseid = 3
+#arrayid = 6 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 hyperpara = (0.1,0.05,20)
 datapath = parentpath + 'OSSE2/FakeData/'; 
 
 if baseid==0:
-    versionpath = parentpath + 'OSSE2/Low/'; noise_level = 0
+    versionpath = parentpath + 'OSSE4/Low/'; noise_level = 0
 elif baseid==1:
-    versionpath = parentpath + 'OSSE2/Medium/'; noise_level = 1
+    versionpath = parentpath + 'OSSE4/Medium/'; noise_level = 1
 elif baseid==2:
-    versionpath = parentpath + 'OSSE2/High/'; noise_level = 2
-
+    versionpath = parentpath + 'OSSE4/High/'; noise_level = 2
+elif baseid==3:
+    versionpath = parentpath + 'OSSE4/Test/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 #outpath='./Output/'
@@ -62,29 +64,39 @@ PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)
 
 #%%
+#if SiteInfo.iloc[fid]['IGBP']==1: 
+#    def f_p50_prior(p50): return 1+1*((p50<12) and (p50>2))
+#    p50_init = 5
+#elif SiteInfo.iloc[fid]['IGBP']>9:
+#    def f_p50_prior(p50): return 1+1*((p50<4) and (p50>0.3))
+#    p50_init = 1.5
+#else:
+#    def f_p50_prior(p50): return 1+1*((p50<5) and (p50>0.5))
+#    p50_init = 2
+
 if SiteInfo.iloc[fid]['IGBP']==1: 
-    def f_p50_prior(p50): return 1+1*((p50<12) and (p50>2))
-    p50_init = 5
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.82, -5.23, 3.09)+1e-20)
+    p50_init = 5.23
 elif SiteInfo.iloc[fid]['IGBP']>9:
-    def f_p50_prior(p50): return 1+1*((p50<4) and (p50>0.3))
-    p50_init = 1.5
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.77, -1.87, 1.27)+1e-20)
+    p50_init = 1.87
 else:
-    def f_p50_prior(p50): return 1+1*((p50<5) and (p50>0.5))
-    p50_init = 2
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.53, -2.21, 1.12)+1e-20)
+    p50_init = 2.21
 
 #%% =========================== read input =================================
 
 Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 
-# VOD_ma = np.reshape(VOD,[-1,2])
-# VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
-
-with open(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl', 'rb') as f: 
-    VOD_fake,ET_fake,SOILM_fake = pickle.load(f)
-print(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl')
-ET = np.copy(ET_fake)
-VOD_ma = np.copy(VOD_fake)
-SOILM = np.copy(SOILM_fake)
+VOD_ma = np.reshape(VOD,[-1,2])
+VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
+if baseid<3:
+    with open(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl', 'rb') as f: 
+        VOD_fake,ET_fake,SOILM_fake = pickle.load(f)
+    print(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl')
+    ET = np.copy(ET_fake)
+    VOD_ma = np.copy(VOD_fake)
+    SOILM = np.copy(SOILM_fake)
 # plt.figure();plt.plot(VOD_ma);plt.plot(VOD_fake)
 # plt.figure();plt.plot(ET);plt.plot(ET_fake)
 # plt.figure();plt.plot(SOILM);plt.plot(SOILM_fake)
@@ -270,7 +282,9 @@ if MODE == 'VOD_ET' or ((MODE=='VOD_ET_ISO') and (res==0)):
         sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
         loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat[valid_vod],sigma_VOD))
         loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
-        return (loglik_vod+loglik_et)/2*Nobs*f_p50_prior(theta[2])
+#        print(theta)
+        print(theta[2],f_p50_prior(theta[2]))
+        return (loglik_vod+loglik_et)/2*Nobs+f_p50_prior(theta[2])
     
 elif MODE == 'VOD_ET_ISO':
     def Gaussian_loglik(theta0):
@@ -289,7 +303,7 @@ elif MODE == 'VOD_ET_ISO':
             loglik_iso = norm.logpdf(iso,iso_hat,iso*0.5)
         else: 
             loglik_iso = np.nan
-        return (loglik_vod+loglik_et+loglik_iso)/3*Nobs*f_p50_prior(theta[2])   
+        return (loglik_vod+loglik_et+loglik_iso)/3*Nobs+f_p50_prior(theta[2])   
 
 elif MODE == 'VOD_SM' or ((MODE=='VOD_SM_ISO') and (res==0)):
     def Gaussian_loglik(theta0):
@@ -309,7 +323,7 @@ elif MODE == 'VOD_SM' or ((MODE=='VOD_SM_ISO') and (res==0)):
             loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
         else:
             loglik_sm = np.nan
-        return (loglik_vod+loglik_sm)/2*Nobs*f_p50_prior(theta[2])
+        return (loglik_vod+loglik_sm)/2*Nobs+f_p50_prior(theta[2])
 
 elif MODE == 'VOD_SM_ISO':
     def Gaussian_loglik(theta0):
@@ -337,7 +351,7 @@ elif MODE == 'VOD_SM_ISO':
         else: 
             loglik_iso = np.nan
 
-        return (loglik_vod+loglik_sm+loglik_iso)/3*Nobs*f_p50_prior(theta[2])
+        return (loglik_vod+loglik_sm+loglik_iso)/3*Nobs+f_p50_prior(theta[2])
     
 elif MODE == 'VOD_SM_ET' or ((MODE=='VOD_SM_ET_ISO') and (res==0)):
     def Gaussian_loglik(theta0):
@@ -359,7 +373,7 @@ elif MODE == 'VOD_SM_ET' or ((MODE=='VOD_SM_ET_ISO') and (res==0)):
             loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
         else:
             loglik_sm = np.nan
-        return (loglik_vod+loglik_et+loglik_sm)/3*Nobs*f_p50_prior(theta[2])
+        return (loglik_vod+loglik_et+loglik_sm)/3*Nobs+f_p50_prior(theta[2])
     
 elif MODE == 'VOD_SM_ET_ISO':
     def Gaussian_loglik(theta0):
@@ -387,12 +401,13 @@ elif MODE == 'VOD_SM_ET_ISO':
             loglik_iso = norm.logpdf(iso,iso_hat,iso*0.5)
         else: 
             loglik_iso = np.nan
-        return (loglik_vod+loglik_sm+loglik_et+loglik_iso)/4*Nobs*f_p50_prior(theta[2])
+        return (loglik_vod+loglik_sm+loglik_et+loglik_iso)/4*Nobs+f_p50_prior(theta[2])
     
 
 #%%     
 tic = time.perf_counter()
 print('Starting...')
+print(p50_init)
 AMIS(Gaussian_loglik,PREFIX,varnames, bounds,p50_init,samplenum,hyperpara)
 toc = time.perf_counter()
 print(f"Sampling time (10 samples): {toc-tic:0.4f} seconds")

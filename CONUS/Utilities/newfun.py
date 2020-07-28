@@ -230,7 +230,7 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
     p = int(len(varnames)-1)
     lowbound, upbound,scale = bounds
     
-    mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1); mu[2] = p50_init
+    mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1); mu[2] = p50_init/scale[2]
     sigma = 0.5*np.identity(p)
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
     r, power, K = hyperpara # hyper parameters
@@ -244,7 +244,7 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
         chunck_idx = len(outlist[0])-9
         chunckid0 = np.max([int(itm[chunck_idx:chunck_idx+2]) for itm in outlist])+1
     else:
-        theta = AMIS_proposal((lowbound+upbound)/2,mu,sigma,tail_para,bounds)
+        theta = AMIS_proposal(mu,mu,sigma,tail_para,bounds)
         logp1 = lik_fun(theta) 
         if np.isnan(logp1):logp1=-99999
         ii = 0
@@ -310,7 +310,7 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
         
         
 
-MAX_STEP_TIME = 5 # sec
+MAX_STEP_TIME = 10 # sec
 def AMIS_proposal(theta,mu,sigma,tail_para,bounds):
     lowbound, upbound,scale = bounds
     mu0,sigma0,ll = tail_para
