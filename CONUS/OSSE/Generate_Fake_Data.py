@@ -39,29 +39,29 @@ tic = time.perf_counter()
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 arrayid = 0
-nsites_per_id = 55
+nsites_per_id = 53
 
 inpath = parentpath+'Input/'
-datapath = parentpath + 'OSSE/FakeData/'
-SiteInfo = pd.read_csv('SiteInfo_reps_55.csv')
+datapath = parentpath + 'OSSE2/FakeData/'
+SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
 MODE = 'AM_PM_ET'
 outpath = parentpath+'Retrieval_0705/Output/'
 varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_vod','loglik']
 
 
     
-#%%
 
 for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
 
     sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
     PREFIX = outpath+MODE+'_'+sitename+'_'
-    print(fid)
+    
     
     Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
     
     VOD_ma = np.reshape(VOD,[-1,2])
     VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
+    print(fid,sum(~np.isnan(VOD)),sum(~np.isnan(ET)),sum(~np.isnan(SOILM)))
     
     Z_r,tx = (SiteInfo['Root depth'][fid]*1000,int(SiteInfo['Soil texture'][fid]))
     
@@ -239,15 +239,29 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     VOD_hat[np.isnan(VOD_ma)] = np.nan
     ET_hat[np.isnan(ET)] = np.nan
     S1_hat[np.isnan(SOILM)] = np.nan
-        
-    for noise_level in [0.8,1,1.2]:
-        VOD_fake = VOD_hat+np.random.normal(0,theta[-1]*noise_level,VOD.shape)
-        ET_fake = ET_hat+np.random.normal(0,theta[-2]*noise_level,ET.shape)
-        SOILM_fake = S1_hat+np.random.normal(0,0.15*noise_level,SOILM.shape)
+   
+    s_vod = [0.005,0.03,0.05]
+    s_et = [0.05,0.3,0.5]
+    s_sm = [0.005,0.03,0.05]
+    for noise_level in [0,1,2]:
+        VOD_fake = VOD_hat+np.random.normal(0,s_vod[noise_level],VOD.shape)
+        ET_fake = ET_hat+np.random.normal(0,s_et[noise_level],ET.shape)
+        SOILM_fake = S1_hat+np.random.normal(0,s_sm[noise_level],SOILM.shape)
         SOILM_fake[SOILM_fake>1] = 1
         SOILM_fake[SOILM_fake<0] = 0
+        # S1_hat[np.abs(SOILM_fake-np.nanmean(SOILM_fake))>2*np.nanstd(SOILM_fake)] = np.nan
+        SOILM_fake[np.abs(SOILM_fake-np.nanmean(SOILM_fake))>2*np.nanstd(SOILM_fake)] = np.nan
+        # plt.figure()
+        # plt.plot(VOD_fake)
+        # plt.plot(VOD_hat)
+        # plt.figure()
+        # plt.plot(ET_hat)
+        # plt.plot(ET_fake)
+        # plt.figure()
+        # plt.plot(S1_hat)
+        # plt.plot(SOILM_fake)
 
-        with open(datapath+'Gen_'+sitename+'_'+str(int(noise_level*100))+'.pkl', 'wb') as f: pickle.dump((VOD_fake,ET_fake,SOILM_fake), f)
+        with open(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl', 'wb') as f: pickle.dump((VOD_fake,ET_fake,SOILM_fake), f)
     
 
 
