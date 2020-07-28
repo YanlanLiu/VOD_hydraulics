@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=os1
+#SBATCH --job-name=os12
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
 #SBATCH --array=0-317
@@ -14,6 +14,6 @@
 ######################
 
 # Print this sub-job's task ID
-echo "GRID: " $SLURM_ARRAY_TASK_ID >> OSSE1.out
-python OSSE.py 1
+echo "GRID: " $SLURM_ARRAY_TASK_ID >> OSSE1_2.out
+python OSSE1.py 2
 ~

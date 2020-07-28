@@ -214,13 +214,13 @@ def fitVOD_RMSE(PSIL,LAI,VOD,return_popt=False):
 def get_var_bounds(MODE):
     if MODE=='VOD_ET' or MODE=='VOD_ET_ISO':
         varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_vod','loglik']
-        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,3,0.3])
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,2,0.2])
     elif MODE=='VOD_SM' or MODE=='VOD_SM_ISO':
         varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_sm','sigma_vod','loglik']
-        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,0.3,0.3])
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,0.2,0.2])
     elif MODE=='VOD_SM_ET' or MODE=='VOD_SM_ET_ISO':
         varnames = ['g1','lpx','psi50X','gpmax','C','bexp','bc','sigma_et','sigma_sm','sigma_vod','loglik']
-        lowbound = np.array([0,0,0,0,0,1.5,0,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,3,0.3,0.3])
+        lowbound = np.array([0,0,0,0,0,1.5,0,0,0,0]); upbound = np.array([10,1,12,10,23,10,1,2,0.2,0.2])
     scale = np.max(abs(np.column_stack([lowbound,upbound])),axis=1)
     bounds = (lowbound/scale, upbound/scale, scale)
     return varnames, bounds
@@ -231,7 +231,7 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
     lowbound, upbound,scale = bounds
     
     mu = np.mean(np.column_stack([bounds[0],bounds[1]]),axis=1); mu[2] = p50_init
-    sigma = 0.5**2*np.identity(p)
+    sigma = 0.5*np.identity(p)
     tail_para = (mu,1**2*np.identity(p),0.2) # mu0, sigma0, ll
     r, power, K = hyperpara # hyper parameters
     rn = r/(1/K)**power
@@ -246,7 +246,7 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
     else:
         theta = AMIS_proposal((lowbound+upbound)/2,mu,sigma,tail_para,bounds)
         logp1 = lik_fun(theta) 
-        if np.isnan(logp1):logp1=-9999
+        if np.isnan(logp1):logp1=-99999
         ii = 0
         sample_para0 = (mu,sigma,rn,ii,theta,logp1) # for use of restart
         chunckid0 = 0
@@ -292,17 +292,12 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
 
                     
         det = np.linalg.det(sigma)
-        #print(acc,det,ii,rn)
-        #print(theta)
-        if acc<0.03: 
-            mu,sigma,rn,ii,theta,logp1 = sample_para0; 
-            print("restart..."); #det<1e-100 or 
-        print(acc,det,ii,rn)
-        #print(theta)
+        print(logp1,acc,det,ii,rn)
+        
+        if ((acc<0.03) and (det<1e-100)) or ((acc<0.05) and (det<1e-120)) or acc<0.005 or det<1e-180: mu,sigma,rn,ii,theta,logp1 = sample_para0; print("restart..."); #det<1e-100 or 
         sample_para = (mu,sigma,rn,ii,theta,logp1)
-
-        dloglik = (logp1-sample_para0[-1])/np.abs(sample_para0[-1])
-        if acc>0.2 or dloglik>0.5: sample_para0 = copy(sample_para)
+#        dloglik = (logp1-sample_para0[-1])/np.abs(sample_para0[-1])
+        if acc>0.1: sample_para0 = copy(sample_para)
 
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
         sdf.to_pickle(outname)

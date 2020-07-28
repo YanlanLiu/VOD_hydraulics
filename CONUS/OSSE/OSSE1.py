@@ -26,7 +26,7 @@ tic = time.perf_counter()
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])#
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-samplenum = (30,2000)
+samplenum = (20,2000)
  
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #baseid = 0
@@ -37,11 +37,11 @@ hyperpara = (0.1,0.05,20)
 datapath = parentpath + 'OSSE2/FakeData/'; 
 
 if baseid==0:
-    versionpath = parentpath + 'OSSE2/Low/'; noise_level = 0
+    versionpath = parentpath + 'OSSE3/Low/'; noise_level = 0
 elif baseid==1:
-    versionpath = parentpath + 'OSSE2/Medium/'; noise_level = 1
+    versionpath = parentpath + 'OSSE3/Medium/'; noise_level = 1
 elif baseid==2:
-    versionpath = parentpath + 'OSSE2/High/'; noise_level = 2
+    versionpath = parentpath + 'OSSE3/High/'; noise_level = 2
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'

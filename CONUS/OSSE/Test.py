@@ -24,31 +24,31 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-baseid = int(sys.argv[1])#
+#baseid = int(sys.argv[1])#
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
 samplenum = (30,2000)
  
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #baseid = 0
-#arrayid = 34 # 0-5, 10-15, 20-25, 30-35
+#arrayid = 68 # 0-5, 10-15, 20-25, 30-35
 #samplenum = (3,100) # number of chuncks, number of samples per chunck
 
 hyperpara = (0.1,0.05,20)
-datapath = parentpath + 'OSSE2/FakeData/'; 
+#datapath = parentpath + 'OSSE2/FakeData/'; 
 
-if baseid==0:
-    versionpath = parentpath + 'OSSE2/Low/'; noise_level = 0
-elif baseid==1:
-    versionpath = parentpath + 'OSSE2/Medium/'; noise_level = 1
-elif baseid==2:
-    versionpath = parentpath + 'OSSE2/High/'; noise_level = 2
-
+#if baseid==0:
+#    versionpath = parentpath + 'OSSE2/Low/'; noise_level = 0
+#elif baseid==1:
+#    versionpath = parentpath + 'OSSE2/Medium/'; noise_level = 1
+#elif baseid==2:
+#    versionpath = parentpath + 'OSSE2/High/'; noise_level = 2
+versionpath = parentpath + 'OSSE2/Test/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 #outpath='./Output/'
 
-MODE_list = ['VOD_ET','VOD_ET_ISO','VOD_SM','VOD_SM_ISO','VOD_SM_ET','VOD_SM_ET_ISO']
-
+#MODE_list = ['VOD_ET','VOD_ET_ISO','VOD_SM','VOD_SM_ISO','VOD_SM_ET','VOD_SM_ET_ISO']
+MODE_list = ['VOD_ET','VOD_SM_ET']
 
 fid = int(arrayid/len(MODE_list))
 modeid = arrayid -fid*len(MODE_list)
@@ -76,15 +76,15 @@ else:
 
 Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 
-# VOD_ma = np.reshape(VOD,[-1,2])
-# VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
+VOD_ma = np.reshape(VOD,[-1,2])
+VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
 
-with open(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl', 'rb') as f: 
-    VOD_fake,ET_fake,SOILM_fake = pickle.load(f)
-print(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl')
-ET = np.copy(ET_fake)
-VOD_ma = np.copy(VOD_fake)
-SOILM = np.copy(SOILM_fake)
+#with open(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl', 'rb') as f: 
+#    VOD_fake,ET_fake,SOILM_fake = pickle.load(f)
+#print(datapath+'Gen_'+sitename+'_'+str(noise_level)+'.pkl')
+#ET = np.copy(ET_fake)
+#VOD_ma = np.copy(VOD_fake)
+#SOILM = np.copy(SOILM_fake)
 # plt.figure();plt.plot(VOD_ma);plt.plot(VOD_fake)
 # plt.figure();plt.plot(ET);plt.plot(ET_fake)
 # plt.figure();plt.plot(SOILM);plt.plot(SOILM_fake)
