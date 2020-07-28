@@ -147,6 +147,10 @@ def nanOLS(X,y):
         res = 0
     return res
 
+def nancorr(x,y):
+    nanfilter = ~np.isnan(x+y)
+    return np.corrcoef(x[nanfilter],y[nanfilter])[0][1]
+
 def cdfmatching(y,yhat): # specifically for variables between 0 and 1 with resolution of .01
     bins = np.arange(0,1,0.01)
     counts, bin_edges = np.histogram(y, bins=bins, normed=True)
