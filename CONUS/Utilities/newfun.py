@@ -294,10 +294,10 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
         det = np.linalg.det(sigma)
         print(logp1,acc,det,ii,rn)
         
-        if ((acc<0.03) and (det<1e-100)) or ((acc<0.05) and (det<1e-120)) or acc<0.005 or det<1e-180: mu,sigma,rn,ii,theta,logp1 = sample_para0; print("restart..."); #det<1e-100 or 
+        if ((acc<0.03) and (det<1e-100)) or ((acc<0.05) and (det<1e-120)) or acc<0.005 or det<1e-150: mu,sigma,rn,ii,theta,logp1 = sample_para0; print("restart..."); #det<1e-100 or 
         sample_para = (mu,sigma,rn,ii,theta,logp1)
 #        dloglik = (logp1-sample_para0[-1])/np.abs(sample_para0[-1])
-        if acc>0.1: sample_para0 = copy(sample_para)
+        if acc>0.15: sample_para0 = copy(sample_para)
 
         sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
         sdf.to_pickle(outname)

@@ -6,7 +6,7 @@
 #SBATCH --array=0-211
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
-#SBATCH --time=5:00:00
+#SBATCH --time=1:00:00
 #SBATCH --mem-per-cpu=2000
 
 ######################

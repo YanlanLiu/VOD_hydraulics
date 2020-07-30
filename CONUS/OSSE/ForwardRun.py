@@ -32,7 +32,7 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/OSSE2/'
+parentpath = '/scratch/users/yanlan/OSSE4/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
 warmup, nsample,thinning = (0.8,200,50)
 
