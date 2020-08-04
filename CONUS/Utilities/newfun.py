@@ -342,7 +342,8 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
 def GetTrace(PREFIX,varnames,warmup,optimal=False):
     outlist = sorted(glob.glob(PREFIX+'*.pickle'))
     chain_idx = len(outlist[0])-12; chunck_idx = len(outlist[0])-9
-    chainlist = np.unique([int(itm[chain_idx:chain_idx+2]) for itm in outlist])  
+    #chainlist = np.unique([int(itm[chain_idx:chain_idx+2]) for itm in outlist]) 
+    chainlist = [0] 
     for chainid in chainlist:
         flist = glob.glob(PREFIX+str(chainid).zfill(2)+'*.pickle')
         for outname in flist:

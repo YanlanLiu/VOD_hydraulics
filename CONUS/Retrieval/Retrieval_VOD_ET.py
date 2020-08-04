@@ -38,14 +38,15 @@ from Utilities import MovAvg
 
 # import matplotlib.pyplot as plt
 # =========================== control pannel =============================
-# parentpath = '/scratch/users/yanlan/'
-# baseid = int(sys.argv[1])
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-# samplenum = (15,2000)
+parentpath = '/scratch/users/yanlan/'
+baseid = int(sys.argv[1])
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+samplenum = (25,2000)
+chainid = 1#int(fid-fid*chains_per_site)
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 81 # 0-5, 10-15, 20-25, 30-35
-samplenum = (3,10) # number of chuncks, number of samples per chunck
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 81 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'Retrieval_VOD_ET/'; hyperpara = (0.1,0.05,20)
 
@@ -53,10 +54,8 @@ inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 MODE = 'VOD_ET'
 
-
 chains_per_site = 1
 fid = int(arrayid/chains_per_site)
-chainid = 0#int(fid-fid*chains_per_site)
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
@@ -243,7 +242,6 @@ def Gaussian_loglik(theta0):
     sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
     loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat,sigma_VOD))
     loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
-    print(theta[2],f_p50_prior(theta[2]))
     return (loglik_vod+loglik_et)/2*Nobs+f_p50_prior(theta[2])
     
     
