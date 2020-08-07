@@ -10,15 +10,15 @@ import time
 
 
 parentpath = '/scratch/users/yanlan/' 
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
-nsites_per_id = 1000
+#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-14
+#nsites_per_id = 1000
 
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 83
-#nsites_per_id = 1
+arrayid = 83
+nsites_per_id = 1
 
-versionpath = parentpath + 'Retrieval_0510/'
+versionpath = parentpath + 'Retrieval_VOD_ET/'
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
 #forwardpath = parentpath+'Forward_test/'
@@ -27,7 +27,7 @@ forwardpath = versionpath+'Forward/'
 r2path = versionpath+'R2/'
 
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
-MODE = 'AM_PM_ET_'
+MODE = 'VOD_ET_'
 
 MissingList = []
 R2 = np.zeros([nsites_per_id,2])+np.nan

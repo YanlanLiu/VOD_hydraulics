@@ -1,54 +1,74 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul  6 10:43:31 2020
+Created on Mon Aug  3 19:59:07 2020
 
 @author: yanlan
 """
 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 29 22:11:33 2020
 
+@author: yanlan
+"""
 import os
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
+from scipy.stats import genextreme as gev
 import warnings; warnings.simplefilter("ignore")
 import time
 import sys; sys.path.append("../Utilities/")
-from newfun_sm import readCLM, fitVOD_RMSE, AMIS
-from newfun_sm import varnames,scale,dt, hour2day, hour2week
-from newfun_sm import OB,CONST,CLAPP,ca
+from newfun import readCLM, fitVOD_RMSE, AMIS
+from newfun import get_var_bounds,dt, hour2day, hour2week
+from newfun import OB,CONST,CLAPP,ca
 from Utilities import MovAvg
-# np.random.seed(seed=123)
 
-# import matplotlib.pyplot as plt
+
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
-samplenum = (15,2000)
+samplenum = (25,2000)
 
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 1 # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,10) # number of chuncks, number of samples per chunck
+#arrayid = 80 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,20) # number of chuncks, number of samples per chunck
 
-versionpath = parentpath + 'SM_0717/'; hyperpara = (0.1,0.05,20)
+versionpath = parentpath + 'Retrieval_SM/'; hyperpara = (0.1,0.05,20)
 
 inpath = parentpath+'Input/'
 outpath = versionpath+'Output/'
-MODE = 'AM_PM_ET'
-
+MODE = 'VOD_SM_ET'
 
 chains_per_site = 1
+fid = int(arrayid/chains_per_site)
+chainid = 0#int(fid-fid*chains_per_site)
 
-fid = arrayid*1
-chainid = int(fid-fid*chains_per_site)
-#SiteInfo = pd.read_csv('SiteInfo_reps_50.csv')
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)
 
+if SiteInfo.iloc[fid]['IGBP']==1:  # ENF
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.65, -4.43, 1.94)+1e-20)
+    p50_init = 4.43
+elif SiteInfo.iloc[fid]['IGBP']==2:  # EBF
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 1.08, -2.86, 2.92)+1e-20)
+    p50_init = 2.86
+elif (SiteInfo.iloc[fid]['IGBP']>5) and (SiteInfo.iloc[fid]['IGBP']<10):  # SHB and SAV
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.76, -3.64, 2.55)+1e-20)
+    p50_init = 3.64
+elif SiteInfo.iloc[fid]['IGBP']>9: #GRA and others
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.77, -1.86, 1.25)+1e-20)
+    p50_init = 1.86
+else: #DBF and MF
+    def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.71, -2.23, 1.49)+1e-20)
+    p50_init = 2.23
+    
 # =========================== read input =================================
 #%%
 Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
@@ -160,9 +180,8 @@ def runhh_2soil_hydro(theta):
     s2 = np.copy(sinit) 
     phiL = phi0*(s2/n)**(-bexp) - 0.01
     
-    s1_list = np.zeros([N,]); 
-    # s2_list = np.zeros([N,])
-    # e_list = np.zeros([N,]); t_list = np.zeros([N,])
+    s1_list = np.zeros([N,]) 
+    # s2_list = np.zeros([N,]); e_list = np.zeros([N,]); t_list = np.zeros([N,])
 
     for i in np.arange(N):
         
@@ -197,55 +216,54 @@ def runhh_2soil_hydro(theta):
             
         et_list[i] = ei+ti
         s1_list[i] = np.copy(s1)
-        # e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
     s1_list[np.isnan(s1_list)] = np.nanmean(s1_list); s1_list[s1_list>1] = 1; s1_list[s1_list<0] = 0
-    return phil_list,et_list,s1_list #,s1_list,s2_list,e_list,t_list
+        
+    return phil_list,et_list,s1_list#,s2_list,e_list,t_list
 
 #%%
 # ========================== MCMC sampling ==============================  
+varnames, bounds = get_var_bounds(MODE)
+scale = bounds[2]
 idx_sigma_vod = varnames.index('sigma_vod')
-idx_sigma_et = varnames.index('sigma_et')
-idx_sigma_sm = varnames.index('sigma_sm')
-
 valid_vod = ~np.isnan(VOD_ma); VOD_ma_valid = VOD_ma[valid_vod]
+
+idx_sigma_et = varnames.index('sigma_et')
 valid_et = ~np.isnan(ET); ET_valid = ET[valid_et]
+
+idx_sigma_sm = varnames.index('sigma_sm')
 valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
-
-Nobs = (sum(valid_vod)+sum(valid_et)+sum(valid_sm))
-
 bins = np.arange(0,1.02,0.01)
 counts, bin_edges = np.histogram(SOILM_valid, bins=bins, normed=True)
 cdf1 = np.cumsum(counts)/sum(counts)
 
+Nobs = sum(valid_vod)+sum(valid_et)+sum(valid_sm)
+
 def Gaussian_loglik(theta0):
+    
     theta = theta0*scale
     PSIL_hat,ET_hat,SM_hat = runhh_2soil_hydro(theta)
     ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et][valid_et] # mm/hr -> mm/day
     dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
     VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)[valid_vod]
     SM_hat = hour2day(SM_hat,idx)[~discard_vod][::2][valid_sm]
-
-    sigma_VOD, sigma_ET, sigma_SM = (theta[idx_sigma_vod], theta[idx_sigma_et],theta[idx_sigma_sm])
+    
+    sigma_VOD, sigma_ET,sigma_SM = (theta[idx_sigma_vod], theta[idx_sigma_et],theta[idx_sigma_sm])
     loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat,sigma_VOD))
     loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))
-
+    
     if np.isfinite(np.nansum(SM_hat)) and np.nansum(SM_hat)>0:
-        # try:
         counts, bin_edges = np.histogram(SM_hat, bins=bins, normed=True)
-        # except ValueError:
-        #     print(ValueError)
-        #     print(np.nansum(SM_hat),np.nanmax(SM_hat))
-
         cdf2 = np.cumsum(counts)/sum(counts)
         SM_matched = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in SM_hat])
         loglik_sm = np.nanmean(norm.logpdf(SOILM_valid,SM_matched,sigma_SM))
     else:
         loglik_sm = np.nan
+    return (loglik_vod+loglik_et+loglik_sm)/3*Nobs+f_p50_prior(theta[2])
     
-    return (loglik_vod+loglik_et+loglik_sm)/3*Nobs
 
 tic = time.perf_counter()
-AMIS(Gaussian_loglik,PREFIX,samplenum,hyperpara)
+# AMIS(Gaussian_loglik,PREFIX,samplenum,hyperpara)
+AMIS(Gaussian_loglik,PREFIX,varnames, bounds,p50_init,samplenum,hyperpara)
 toc = time.perf_counter()
 print(f"Sampling time (10 samples): {toc-tic:0.4f} seconds")
 
@@ -261,3 +279,4 @@ print(f"Sampling time (10 samples): {toc-tic:0.4f} seconds")
 # plt.figure();plt.plot(t_list);plt.ylabel('t')
 # plt.figure();plt.plot(s1_list);plt.ylabel('s1')
 # plt.figure();plt.plot(s2_list);plt.ylabel('s2')
+
