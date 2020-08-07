@@ -1,7 +1,0 @@
-Traceback (most recent call last):
-  File "ForwardRun_cluster.py", line 196, in <module>
-    trace = GetTrace(PREFIX,0,optimal=False)
-  File "../Utilities/newfun.py", line 302, in GetTrace
-    chain_idx = len(outlist[0])-12; chunck_idx = len(outlist[0])-9
-IndexError: list index out of range
-/var/spool/slurmd/job497898/slurm_script: line 19: /home/users/yanlan: Is a directory
