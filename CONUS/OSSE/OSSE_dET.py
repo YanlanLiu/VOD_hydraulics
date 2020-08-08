@@ -32,15 +32,15 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-# parentpath = '/scratch/users/yanlan/'
-# baseid = int(sys.argv[1])#
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-# samplenum = (30,2000)
+parentpath = '/scratch/users/yanlan/'
+baseid = int(sys.argv[1])#
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+samplenum = (30,2000)
  
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-baseid = 1
-arrayid = 6 # 0-5, 10-15, 20-25, 30-35
-samplenum = (3,40) # number of chuncks, number of samples per chunck
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#baseid = 1
+#arrayid = 6 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 hyperpara = (0.1,0.05,20)
 datapath = parentpath + 'OSSE_dET/FakeData/'; 
