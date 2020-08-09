@@ -84,9 +84,10 @@ def readCLM(inpath,sitename,timerange):
     tt_gleam = np.arange(np.datetime64('2015-01-01'),np.datetime64('2019-01-01'))
     
     idx_start = np.where(tt_gleam==tt_gldas[0].date())[0][0]
-    idx_end = np.where(tt_gleam==tt_gldas[-1].date())[0][0]
+    idx_end = idx_start+len(discard)
+    #idx_end = np.where(tt_gleam==tt_gldas[-1].date())[0][0]
     
-    assim = assim.iloc[idx_start:idx_end+1].reset_index().drop(columns=['index'])
+    assim = assim.iloc[idx_start:idx_end].reset_index().drop(columns=['index'])
     
     VOD,SOILM,ET = (rm_outlier(assim['VOD'].values),rm_outlier(assim['SM'].values),assim['ET'].values)
     

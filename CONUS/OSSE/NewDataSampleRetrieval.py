@@ -32,12 +32,12 @@ import time
 tic = time.perf_counter()
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-samplenum = (30,2000)
+#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+#samplenum = (30,2000)
  
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 50# 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,40) # number of chuncks, number of samples per chunck
+arrayid = 5# 0-5, 10-15, 20-25, 30-35
+samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'OSSE_ND/'
 inpath = parentpath+ 'Input_Global/'
@@ -77,7 +77,7 @@ else:
 Forcings,VOD,SOILM,ET,dLAI,discard,amidx = readCLM(inpath,sitename,timerange)
 
 VOD_ma = MovAvg(VOD,4)
-
+print(VOD_ma.shape,discard.shape,SOILM.shape,Forcings[0].shape)
 #%%
 Z_r,tx = (SiteInfo['Root depth'][fid]*1000,int(SiteInfo['Soil texture'][fid]))
 
@@ -202,7 +202,7 @@ def runhh_2soil_hydro(theta):
             for subt in np.arange(tdiv):
                 condS = max(min(1-phiL/(2*psi50L),1),0)
                 tlist[subt] = get_ti(clm,condS)               
-                s2, phiL = advance_linearize(s2,phiL,ti,gpmax,C,psi50X,bexp,dt/tdiv)
+                s2, phiL = advance_linearize(s2,phiL,tlist[subt],gpmax,C,psi50X,bexp,dt/tdiv)
             ti = np.mean(tlist)
         
         ei= petVnumB[i]*(s1/n) #**bexp#*s1/n#*soilfac#*((s1-smcwilt)/(n-smcwilt)**(1))
@@ -217,7 +217,8 @@ def runhh_2soil_hydro(theta):
         f23 = 2/(1/k2+1/k3) * (p2-p3) / (m2-m3)*dt
         s1 = max(s1-f12/d1,0.05)
         s2 = min(max(s2+f12/d2 - f23/d2,0.05),n)  
-            
+        phiL = max(psi50X*2,phiL)
+
         et_list[i] = ei+ti
         s1_list[i] = np.copy(s1)
         # e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
