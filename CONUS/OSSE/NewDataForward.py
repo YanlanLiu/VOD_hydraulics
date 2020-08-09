@@ -42,9 +42,15 @@ parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 arrayid = 80
 warmup, nsample,thinning = (0.8,2,20)
 
-versionpath = parentpath + 'OSSE_ND/'
 inpath = parentpath+ 'Input_Global/'
-outpath = versionpath+'Output/'
+
+
+#versionpath = parentpath + 'OSSE_ND/'
+#outpath = versionpath+'Output/'
+
+versionpath = parentpath + 'OSSE4/ND/'
+outpath = parentpath+'OSSE4/Test/Output/'
+
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 
