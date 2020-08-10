@@ -256,6 +256,7 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         SOILM_fake[SOILM_fake<0] = 0
         # S1_hat[np.abs(SOILM_fake-np.nanmean(SOILM_fake))>2*np.nanstd(SOILM_fake)] = np.nan
         SOILM_fake[np.abs(SOILM_fake-np.nanmean(SOILM_fake))>2*np.nanstd(SOILM_fake)] = np.nan
+        
         # SOILM_fake[IsOutlier(SOILM_fake)] = np.nan
         # plt.figure()
         # plt.plot(VOD_fake)

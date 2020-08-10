@@ -29,8 +29,8 @@ from Utilities import LatLon
 # from newfun import varnames
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-versionpath = parentpath + 'Retrieval_VOD_ET/'; MODE = 'VOD_ET'
-# versionpath = parentpath + 'SM_0717/'
+# versionpath = parentpath + 'Retrieval_VOD_ET/'; MODE = 'VOD_ET'
+versionpath = parentpath + 'Retrieval_SM/'; MODE = 'VOD_SM_ET'
 
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv').iloc[:14000]
 inpath = parentpath+'Input/'
