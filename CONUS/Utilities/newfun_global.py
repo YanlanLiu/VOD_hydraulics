@@ -313,32 +313,21 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)),singular
 
 
-def GetTrace(PREFIX,varnames,warmup,optimal=False):
-    outlist = sorted(glob.glob(PREFIX+'*.pickle'))
-    chain_idx = len(outlist[0])-12; chunck_idx = len(outlist[0])-9
-    #chainlist = np.unique([int(itm[chain_idx:chain_idx+2]) for itm in outlist]) 
-    chainlist = [0] 
-    for chainid in chainlist:
-        flist = glob.glob(PREFIX+str(chainid).zfill(2)+'*.pickle')
-        for outname in flist:
-            trace = pd.read_pickle(outname)
-            niter = len(trace)-1
-            chunckid = int(outname[chunck_idx:chunck_idx+2])
-            tmp = pd.DataFrame(data={'index':np.arange(0,niter),'chain':chainid,'chunk':chunckid})
-            tmp['step'] = chunckid*niter+tmp['index']
-            for para in varnames:
-                tmp[para] = np.array(trace[para][1:])
-            if chainid==chainlist[0] and outname==flist[0]:
-                trace_df = tmp
-            else:
-                trace_df = pd.concat([trace_df,tmp])
-#    if trace_df['step'].max()<=warmup: warmup = int(trace_df['step'].max()*0.8)
-    trace_df = trace_df[trace_df['step']>warmup].sort_values(['chain', 'step']).dropna().reset_index().drop(columns=['index','level_0'])
-    if optimal:
-        chainlist = np.unique(trace_df['chain'])
-        tmp = [np.nanmax(trace_df['loglik'][trace_df['chain']==chainid]) for chainid in chainlist]
-        optimalid = tmp.index(max(tmp))
-        trace_df = trace_df[trace_df['chain']==chainlist[optimalid]].reset_index()
+def GetTrace(PREFIX,warmup=0,chainid=0):
+    flist = glob.glob(PREFIX+str(chainid).zfill(2)+'*.pickle')
+    chunck_idx = len(flist[0])-9
+    for outname in flist:
+        trace = pd.read_pickle(outname)
+        if outname==flist[0]:varnames = list(trace)
+        niter = len(trace)-1
+        chunckid = int(outname[chunck_idx:chunck_idx+2])
+        tmp = pd.DataFrame(data={'index':np.arange(0,niter),'chain':chainid,'chunk':chunckid})
+        tmp['step'] = chunckid*niter+tmp['index']
+        for para in varnames: tmp[para] = np.array(trace[para][1:])
+        
+        if outname==flist[0]: trace_df = tmp 
+        else: trace_df = pd.concat([trace_df,tmp])
+    trace_df = trace_df[trace_df['step']>trace_df['step'].max()*warmup].sort_values(['step']).dropna().reset_index().drop(columns=['index','level_0','chain','chunk','step'])
     return trace_df
 
 # def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):

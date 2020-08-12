@@ -29,8 +29,8 @@ from Utilities import LatLon
 # from newfun import varnames
 
 parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-# versionpath = parentpath + 'Retrieval_VOD_ET/'; MODE = 'VOD_ET'
-versionpath = parentpath + 'Retrieval_SM/'; MODE = 'VOD_SM_ET'
+versionpath = parentpath + 'Retrieval_VOD_ET/'; MODE = 'VOD_ET'
+# versionpath = parentpath + 'Retrieval_SM/'; MODE = 'VOD_SM_ET'
 
 SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv').iloc[:14000]
 inpath = parentpath+'Input/'
@@ -122,8 +122,8 @@ TRY = TRY[TRY['P50']!=-999].reset_index()
 TRY_P50_mean = [-np.median(TRY['P50'][TRY['PFT']==itm]) for itm in ['GRA','DBF','SHB','ENF']]
 TRY_P50_std = [np.std(TRY['P50'][TRY['PFT']==itm]) for itm in ['GRA','DBF','SHB','ENF','GRA']]
 TRY_P50_min = [-np.percentile(TRY['P50'][TRY['PFT']==itm],25) for itm in ['GRA','DBF','SHB','ENF']]
-TRY_P50_max = [-npx`.percentile(TRY['P50'][TRY['PFT']==itm],75) for itm in ['GRA','DBF','SHB','ENF']]
-x
+TRY_P50_max = [-np.percentile(TRY['P50'][TRY['PFT']==itm],75) for itm in ['GRA','DBF','SHB','ENF']]
+
 IGBPlist = ['NA','ENF','EBF','DNF','DBF','MF','Shrubland','Shrubland',
             'Savannas','Savannas','Grassland','Wetland','Cropland','Urban','Cropland','Snow','NA','NA','NA']
 
@@ -237,11 +237,13 @@ df['lat0'] = lat0; df['lon0'] = lon0
 new_df = pd.merge(df,fia,how='left',left_on=['lat0','lon0'],right_on=['Lat','Lon'])
 new_df['IGBPnames'] = IGBPnames
 # new_df['psi50X'] = new_df['psi50X']
-new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') & (df['N_VOD']>10) & (df['N_ET']>2)]
-
+new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') & (df['N_VOD']>10).values & (df['N_ET']>2).values]
+if new_df['psi50X'].mean()>0: new_df['psi50X'] = -new_df['psi50X']
 plt.figure(figsize=(6,6))
 xlim = [-13.5,0.5]
-sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
+# sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
+sns.scatterplot(x="P50", y="psi50X",s=new_df['nplots']*.10,alpha=0.5, hue="IGBPnames",data=new_df)
+
 plt.legend(bbox_to_anchor=(1.75,1.05))
 plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 

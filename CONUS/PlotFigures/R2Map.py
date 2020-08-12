@@ -207,8 +207,8 @@ IGBPnames = np.array([IGBPlist[itm] for itm in df['IGBP'].values])
 lat0,lon0 = LatLon(df['row'],df['col'])
 # df0 = df.copy()
 df['lat0'] = lat0; df['lon0'] = lon0
-df['psi50X'][df['psi50X']<-6] = df['psi50X']*0.75
-df['psi50X'][df['psi50X']>-2] = df['psi50X']*1.5
+# df['psi50X'][df['psi50X']<-6] = df['psi50X']*0.75
+# df['psi50X'][df['psi50X']>-2] = df['psi50X']*1.5
 
 # df['psi50X'][(df['psi50X']<-6) & (df['IGBP']!=6) & (df['IGBP']!=7)] = df['psi50X']<-6) & (df['IGBP']!=6) & (df['IGBP']!=7),2]*0.75
 
@@ -218,11 +218,11 @@ new_df = pd.merge(df,fia,how='left',left_on=['lat0','lon0'],right_on=['Lat','Lon
 new_df['IGBPnames'] = IGBPnames
 # new_df['psi50X'] = new_df['psi50X']
 # new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') & (df['N_VOD']>10) & (df['N_ET']>2)]
-new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland')]
+new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &(IGBPnames!='Savannas') &(IGBPnames!='MF') & (IGBPnames!='Grassland') &  (IGBPnames!='Cropland')]
 
 plt.figure(figsize=(6,6))
 xlim = [-13.5,0.5]
-sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
+sns.scatterplot(x="P50", y="psi50X",s=new_df['nplots']*0.1,alpha=0.5, hue="IGBPnames",data=new_df)
 # sns.scatterplot(x="P50", y="psi50X",s=20,alpha=0.5, hue="IGBPnames",data=new_df)
 
 plt.legend(bbox_to_anchor=(1.75,1.05))
@@ -236,6 +236,22 @@ plt.imshow(np.flipud(heatmap1_data),cmap=mycmap);plt.colorbar()
 plt.title('# of plots')
 plt.figure()
 plt.hist(new_df['nplots'][new_df['nplots']>1])
+
+#%%
+plt.figure(figsize=(6,6))
+xlim = [-13.5,0.5]
+df_sub = new_df[new_df['nplots']>150].reset_index()
+# df_sub['psi50X'][df_sub['psi50X']<-6] = df_sub['psi50X']*0.75
+# df_sub['psi50X'][df_sub['psi50X']>-2] = df_sub['psi50X']*1.5
+
+sns.scatterplot(x="P50", y="psi50X",s=df_sub['nplots']*.4,alpha=0.5, hue="IGBPnames",data=df_sub)
+# sns.scatterplot(x="P50", y="psi50X",s=20,alpha=0.5, hue="IGBPnames",data=new_df)
+
+plt.legend(bbox_to_anchor=(1.75,1.05))
+plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
+print(len(df_sub))
+
+df_sub[['row','col']].to_csv('FIA_plots.csv')
 #%%
 # lat,lon = LatLon(np.array(new_df['row']),np.array(new_df['col']))
 
