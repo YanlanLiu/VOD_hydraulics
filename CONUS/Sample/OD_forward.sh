@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=od1_ve
+#SBATCH --job-name=fod
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
 #SBATCH --array=0-269
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
-#SBATCH --time=8:00:00
+#SBATCH --time=00:30:00
 #SBATCH --mem-per-cpu=2000
 
 ######################
@@ -14,6 +14,7 @@
 ######################
 
 # Print this sub-job's task ID
-echo "GRID: " $SLURM_ARRAY_TASK_ID >> OD_sample1.out
-python OD_sample.py 1
+echo "GRID: " $SLURM_ARRAY_TASK_ID >> OD_forward.out
+python OD_forward.py 0
+python OD_forward.py 1
 ~

@@ -22,21 +22,22 @@ from Utilities import MovAvg
 
 tic = time.perf_counter()
 # =========================== control pannel =============================
-# parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-# chainid = int(sys.argv[1])
-# samplenum = (30,2000)
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+chainid = int(sys.argv[1])
+samplenum = (30,2000)
  
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 20# 0-5, 10-15, 20-25, 30-35
-chainid = 1
-samplenum = (3,40) # number of chuncks, number of samples per chunck
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 20# 0-5, 10-15, 20-25, 30-35
+#chainid = 1
+#samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'ODsample/'
 inpath = parentpath+ 'Input/'
 outpath = versionpath+'Output/'
 
 MODE_list = ['VOD_ET','VOD_SM_ET']
+#MODE_list = ['VOD_ET']
 hyperpara = (0.1,0.05,20)
 
 
@@ -246,7 +247,6 @@ if MODE == 'VOD_ET':
         ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et][valid_et] # mm/hr -> mm/day
         dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
         VOD_hat = fitVOD_RMSE(dPSIL,dLAI,VOD_ma)[valid_vod]
-        # SM_hat = hour2day(SM_hat,idx)[~discard_vod][::2][valid_sm]
         sigma_VOD, sigma_ET = (theta[idx_sigma_vod], theta[idx_sigma_et])
         loglik_vod = np.nanmean(norm.logpdf(VOD_ma_valid,VOD_hat,sigma_VOD))
         loglik_et = np.nanmean(norm.logpdf(ET_valid,ET_hat,sigma_ET))

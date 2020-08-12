@@ -28,15 +28,15 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-# parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-# chainid = int(sys.argv[1])
-# warmup, nsample,thinning = (0.8,200,20)
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+chainid = int(sys.argv[1])
+warmup, nsample,thinning = (0.8,200,40)
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 21# 0-5, 10-15, 20-25, 30-35
-chainid = 0
-warmup, nsample,thinning = (0.8,2,20)
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 21# 0-5, 10-15, 20-25, 30-35
+#chainid = 0
+#warmup, nsample,thinning = (0.8,2,20)
 
 
 inpath = parentpath+ 'Input/'
@@ -45,8 +45,8 @@ outpath = versionpath+'Output/'
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 
-MODE_list = ['VOD_ET','VOD_SM_ET']
-
+#MODE_list = ['VOD_ET','VOD_SM_ET']
+MODE_list = ['VOD_SM_ET']
 fid = int(arrayid/len(MODE_list))
 modeid = arrayid -fid*len(MODE_list)
 MODE = MODE_list[modeid]
@@ -279,7 +279,6 @@ with open(obsname, 'wb') as f:
 sample_length = int(3e3); step = int(5e2)
 st_list = range(1000,int(len(trace)/sample_length)*sample_length-sample_length+1,step)
 Geweke = []
-chainid = 0
 # for varname in varnames[:-1]:
 chain = np.array(trace['psi50X'])
 chain = chain[:int(len(chain)/sample_length)*sample_length] 
