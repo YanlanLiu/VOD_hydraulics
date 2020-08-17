@@ -45,8 +45,9 @@ outpath = versionpath+'Output/'
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 
-#MODE_list = ['VOD_ET','VOD_SM_ET']
-MODE_list = ['VOD_SM_ET']
+MODE_list = ['VOD_ET','VOD_SM_ET']
+#MODE_list = ['VOD_SM_ET']
+#MODE_list = ['VOD_ET']
 fid = int(arrayid/len(MODE_list))
 modeid = arrayid -fid*len(MODE_list)
 MODE = MODE_list[modeid]

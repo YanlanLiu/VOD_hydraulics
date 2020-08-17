@@ -32,7 +32,7 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/OSSE4/'
+parentpath = '/scratch/users/yanlan/OSSE_mSM/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
 warmup, nsample,thinning = (0.8,200,50)
 
@@ -43,7 +43,7 @@ warmup, nsample,thinning = (0.8,200,50)
 
 inpath = parentpath+ '../Input/'
 hyperpara = (0.1,0.05,20)
-datapath = parentpath + '../OSSE2/FakeData/'; 
+datapath = parentpath + '../OSSE_mSM/FakeData/'; 
 
 baseid = int(arrayid/53)
 fid = int(arrayid-baseid*53)
@@ -61,11 +61,11 @@ outpath = versionpath +'Output/'
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 # obspath = versionpath+'../OBS_STATS/'; OBSstats = 0
-if baseid==3:
-    MODE_list = ['VOD_ET','VOD_SM_ET']
-else:
-    MODE_list = ['VOD_ET','VOD_ET_ISO','VOD_SM','VOD_SM_ISO','VOD_SM_ET','VOD_SM_ET_ISO']
-
+#if baseid==3:
+#    MODE_list = ['VOD_ET','VOD_SM_ET']
+#else:
+#    MODE_list = ['VOD_ET','VOD_ET_ISO','VOD_SM','VOD_SM_ISO','VOD_SM_ET','VOD_SM_ET_ISO']
+MODE_list = ['VOD_ET','VOD_SM_ET']
 SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
 
 

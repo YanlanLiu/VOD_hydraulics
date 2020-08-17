@@ -34,22 +34,22 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-# parentpath = '/scratch/users/yanlan/OSSE4/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
-# warmup, nsample,thinning = (0.8,200,50)
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+warmup, nsample,thinning = (0.8,200,50)
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 80
-warmup, nsample,thinning = (0.8,2,20)
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 80
+#warmup, nsample,thinning = (0.8,2,20)
 
 inpath = parentpath+ 'Input_Global/'
 
 
-#versionpath = parentpath + 'OSSE_ND/'
-#outpath = versionpath+'Output/'
+versionpath = parentpath + 'OSSE_ND/'
+outpath = versionpath+'Output/'
 
-versionpath = parentpath + 'OSSE4/ND/'
-outpath = parentpath+'OSSE4/Test/Output/'
+#versionpath = parentpath + 'OSSE5/ND/'
+#outpath = parentpath+'OSSE5/Test/Output/'
 
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'

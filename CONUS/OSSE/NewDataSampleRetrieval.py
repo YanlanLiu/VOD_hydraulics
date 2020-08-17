@@ -32,12 +32,12 @@ import time
 tic = time.perf_counter()
 # =========================== control pannel =============================
 parentpath = '/scratch/users/yanlan/'
-#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-#samplenum = (30,2000)
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+samplenum = (30,2000)
  
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 5# 0-5, 10-15, 20-25, 30-35
-samplenum = (3,40) # number of chuncks, number of samples per chunck
+#arrayid = 5# 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,40) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'OSSE_ND/'
 inpath = parentpath+ 'Input_Global/'
