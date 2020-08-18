@@ -20,11 +20,12 @@ from Utilities import LatLon_r,LatLon
 # rlist = [290,433,509]; clist = [1045,861,1296]
 # IGBP = [4,4,2] # main land cover from MODIS
 # SiteInfo = pd.DataFrame({'row':rlist,'col':clist})
-SiteInfo = pd.read_csv('SiteInfo_US.csv').drop(columns=['Unnamed: 0'])
+traitpath = '/Volumes/ELEMENTS/VOD_hydraulics/TraitData/'
+SiteInfo = pd.read_csv('SiteInfo_globe_short.csv').drop(columns=['Unnamed: 0'])
 #%% Soil texture
 #archive_path = 'F:/ReaserchArchive/201612_Mortality/'
 #fname = archive_path+'GIS/Climate/ASCII/soil_rsp.txt'
-fname = './Data/soil_rsp.txt'
+fname = traitpath+'soil_rsp.txt'
 with open(fname,'r') as f:
     content = f.readlines()
 SID = np.loadtxt(fname,skiprows = 6)
@@ -32,7 +33,7 @@ dd = 180/SID.shape[0]
 
 plt.imshow(SID);plt.colorbar()
 #df = pd.read_excel(archive_path+'Data/FAO_Soil/HWSD_DATA.xlsx')
-df = pd.read_excel('./Data/HWSD_DATA.xlsx')
+df = pd.read_excel(traitpath+'HWSD_DATA.xlsx')
 #soiltexture  = ['T_SAND','T_SILT','T_CLAY','S_SAND','S_SILT','S_CLAY']
 soiltexture  = ['T_SAND','T_SILT','T_CLAY']
 
@@ -82,47 +83,65 @@ SiteInfo['Soil texture'] = tx
 #%% Maximum rooting depth, need to solve
 import netCDF4 as nc4
 import glob
-inpath = r"/Volumes/My Passport/Data/MaxRoot/"
+inpath = traitpath+"MaxRoot/"
 # inpath = 'F:\Data\MaxRoot//'
 RD = np.zeros([len(SiteInfo),])-1
-radius = (0.25/2)**2
-flist = glob.glob(inpath+'*.nc')
-# for fname in [flist[3]]:#flist[::-1]:
-fname = flist[3]
-print(fname)
-f = nc4.Dataset(fname)
-dd = 0.25/2
-RootDepth = np.array(f.variables['root_depth']); RootDepth[RootDepth<0] = np.nan
-Latitude = np.array(f.variables['lat'])
-Longitude = np.array(f.variables['lon'])
-XX,YY = np.meshgrid(Longitude,Latitude)
+# radius = (0.25/2)**2
+# flist = glob.glob(inpath+'*.nc')
+# # for fname in [flist[3]]:#flist[::-1]:
+# fname = flist[3]
+# print(fname)
+# f = nc4.Dataset(fname)
+# dd = 0.25/2
+# RootDepth = np.array(f.variables['root_depth']); RootDepth[RootDepth<0] = np.nan
+# Latitude = np.array(f.variables['lat'])
+# Longitude = np.array(f.variables['lon'])
+# XX,YY = np.meshgrid(Longitude,Latitude)
 
 #%%
-for i in  range(len(SiteInfo)):
-    # if RD[i]==-1:
-    lat,lon=LatLon(SiteInfo['row'][i],SiteInfo['col'][i])
-    lat_dd = lat+np.array([-dd,dd]); lon_dd = lon+np.array([-dd,dd])
-    rr = np.where((Latitude>=lat_dd[0])*(Latitude<=lat_dd[1]))[0]
-    cc = np.where((Longitude>=lon_dd[0])*(Longitude<=lon_dd[1]))[0]
-    grid = RootDepth[rr.min():rr.max()+1,cc.min():cc.max()+1]
-    if np.nanmedian(grid)<0.3:
-        RD[i] = np.nanmean(grid)
-    else:
-        RD[i] = np.nanmedian(grid)
-        # distance = (YY-lat)**2+(XX-lon)**2
-        # tmpfilter = (distance<radius)
-        # if np.sum(tmpfilter)>0: 
-        #     tmpfilter1 = tmpfilter*(RootDepth<10)
-        #     RD[i] = np.nanmean(RootDepth[tmpfilter1]) if np.sum(tmpfilter1)>0 else np.nanmedian(RootDepth[tmpfilter])
-RD[RD<0.1] = 0.1; RD[RD>8] = 8
+dd = 0.25/2
+for fname in flist:
+    print(fname)
+    f = nc4.Dataset(fname)
+    RootDepth = np.array(f.variables['root_depth']); RootDepth[RootDepth<0] = np.nan
+    Latitude = np.array(f.variables['lat'])
+    Longitude = np.array(f.variables['lon'])
+
+    for i in  range(len(SiteInfo)):
+        # if RD[i]==-1:
+        # if np.mod(i,1000)==0:print(i)
+        lat,lon=LatLon(SiteInfo['row'][i],SiteInfo['col'][i])
+        lat_dd = lat+np.array([-dd,dd]); lon_dd = lon+np.array([-dd,dd])
+        rr = np.where((Latitude>=lat_dd[0])*(Latitude<=lat_dd[1]))[0]
+        cc = np.where((Longitude>=lon_dd[0])*(Longitude<=lon_dd[1]))[0]
+        if len(rr)>0 and len(cc)>0:
+            grid = RootDepth[rr.min():rr.max()+1,cc.min():cc.max()+1]
+            if np.nanmean(grid)>0:
+                if np.nanmedian(grid)<0.3:
+                    RD[i] = np.nanmean(grid)
+                else:
+                    RD[i] = np.nanmedian(grid)
+            # distance = (YY-lat)**2+(XX-lon)**2
+            # tmpfilter = (distance<radius)
+            # if np.sum(tmpfilter)>0: 
+            #     tmpfilter1 = tmpfilter*(RootDepth<10)
+            #     RD[i] = np.nanmean(RootDepth[tmpfilter1]) if np.sum(tmpfilter1)>0 else np.nanmedian(RootDepth[tmpfilter])
+
+RD[RD==-1] = np.nan
+RD[RD>10] = 10; RD[RD<0.1] = 0.1
 plt.hist(RD)
 
 SiteInfo['Root depth'] = RD
 
 
+# %%
+heatmap1_data = pd.pivot_table(SiteInfo, values='Root depth', index='row', columns='col')
+plt.imshow(heatmap1_data);plt.colorbar()
+plt.title('Root depth')
+
 #%% Koeppen-Geiger climate classification
 #KG = pd.read_csv('F:\Data\Koeppen-Geiger-ASCII\\Koeppen-Geiger-ASCII.csv')
-KG = pd.read_csv('./Data/Koeppen-Geiger-ASCII.csv')
+KG = pd.read_csv(traitpath+'/Koeppen-Geiger-ASCII.csv')
 
 KGtype = []
 for i in range(len(SiteInfo)):
@@ -134,14 +153,14 @@ SiteInfo['Climate type'] = KGtype
 
 #%%
 from netCDF4 import Dataset
-f = Dataset('./Data/GLDASp4_domveg_025d.nc4')
+f = Dataset(traitpath+'GLDASp4_domveg_025d.nc4')
 domveg = np.flipud(f.variables['GLDAS_domveg'][0,:,:])#[160:260,200:470]  # US
 plt.imshow(domveg)
 row = np.array(SiteInfo['row']); col = np.array(SiteInfo['col'])
 IGBP = np.array([domveg[row[i],col[i]] for i in range(len(SiteInfo))])
 SiteInfo['IGBP'] = IGBP.astype('int')
 
-#%% Root type (Jackson et al., 1996, Oecologia),  to be revised. 
+#%% Root type (Jackson et al., 1996, Oecologia)
 # Index following the order of Table 1, starting from 0
 RootType = []
 RootType = -np.ones([len(SiteInfo),])
@@ -185,7 +204,7 @@ SiteInfo['Root type'] = RootType
 #%%
 # https://nph.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fnph.14623&file=nph14623-sup-0003-NotesS1.pdf
 
-SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
+# SiteInfo = pd.read_csv('SiteInfo_US_full.csv')
 
 Vcmax25 = np.zeros([len(SiteInfo),])+np.nan
 IGBP = np.array(SiteInfo['IGBP'])
@@ -201,9 +220,15 @@ for i in range(len(Vcmax25)):
     else:
         Vcmax25[i] = 54
 SiteInfo['Vcmax25'] = Vcmax25
-        
+
+# SiteInfo.to_csv('SiteInfo_US_full.csv')
+SiteInfo0 = SiteInfo.copy()
 #%%
-SiteInfo.to_csv('SiteInfo_US_full.csv')
+tmp = SiteInfo.dropna().reset_index().drop(columns='index')
+tmp.to_csv('SiteInfo_globe_full.csv')
+
+#%%
+# SiteInfo.to_csv('SiteInfo_US_full.csv')
     
 #for i in range(len(SiteInfo)):
 #    climate = SiteInfo['Climate type'][i]

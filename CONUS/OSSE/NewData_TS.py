@@ -67,6 +67,7 @@ with open(forwardname, 'rb') as f: TS,PARA = pickle.load(f)
 
 VOD_hat = np.nanmedian(TS[0],axis=0)
 ET_hat = np.nanmedian(TS[1]+TS[2],axis=0)
+PSIL_hat = np.nanmedian(TS[4],axis=0)
 SM_hat = np.nanmedian(TS[5],axis=0)
 
 valid_vod = (~np.isnan(VOD_ma))*(~discard); VOD_ma_valid = VOD_ma[valid_vod]
@@ -85,7 +86,7 @@ SOILM[~valid_sm] = np.nan
 plt.plot(SM_hat_full);plt.plot(SOILM)
 # VOD_hat, VOD_ma
 
-BUNDEL_SMAP = (tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM)
+BUNDEL_SMAP = (tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM,PSIL_hat)
 
 #%%
 # plt.figure()
@@ -106,6 +107,7 @@ VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)
 with open(forwardname, 'rb') as f: TS,PARA = pickle.load(f)
 VOD_hat = np.nanmedian(TS[0],axis=0)
 ET_hat = np.nanmedian(TS[1]+TS[2],axis=0)
+PSIL_hat = np.nanmedian(TS[4],axis=0)
 SM_hat = np.nanmedian(TS[5],axis=0)
 
 valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
@@ -119,7 +121,7 @@ tt_sm = tt[~discard_vod[::2]]
 # SM_hat = SM_hat[valid_sm]
 # tt_sm = tt[valid_sm]
 
-BUNDEL_ALEXI = (tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM)
+BUNDEL_ALEXI = (tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM,PSIL_hat)
 # ET_hat_full = np.zeros(ET.shape)+np.nan; ET_hat_full[~discard_et] = ET_hat
 # ET[discard] = np.nan
 #%%
@@ -127,7 +129,7 @@ import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=2)
 
 plt.figure(figsize=(14,3))
 
-tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM = BUNDEL_ALEXI
+tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM,PSIL_hat = BUNDEL_ALEXI
 plt.plot(tt_et,ET,'or',label='ALEXI')
 
 plt.plot(tt_et,ET_hat,'-k',label='Optimized')
@@ -138,7 +140,7 @@ plt.ylabel('ET (mm/day)')
 #%%
 plt.figure(figsize=(14,3))
 
-tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM = BUNDEL_SMAP
+tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM,PSIL_hat = BUNDEL_SMAP
 plt.plot(tt,ET,'ob',label='GLEAM')
 
 # plt.plot(tt,ET_hat_full,'--k',label='Forward run')
@@ -150,20 +152,23 @@ plt.xticks(np.arange(np.datetime64('2015-07-01'),np.datetime64('2017-01-01'),tim
 plt.legend()
 plt.ylabel('ET (mm/day)')
 
+
 #%%
 plt.figure(figsize=(14,3))
 
-tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM = BUNDEL_ALEXI
+tt_et,ET_hat,ET,tt_vod,VOD_hat,VOD_ma,tt_sm,SM_hat,SOILM,PSIL_hat = BUNDEL_ALEXI
 plt.plot(tt_vod,VOD_ma,'or',label='AMSRE')
 plt.plot(tt_vod,VOD_hat,'-k',label='Optimized')
 
 # plt.xticks(np.arange(np.datetime64('2004-01-01'),np.datetime64('2006-01-01'),timedelta(365)))
 # plt.legend()
 # plt.ylabel('VOD')
+plt.figure()
+plt.plot(PSIL_hat)
 #%%
 plt.figure(figsize=(14,3))
 
-tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM = BUNDEL_SMAP
+tt,ET_hat_full,VOD_hat_full,SM_hat_full,ET,VOD_ma,SOILM,PSIL_hat = BUNDEL_SMAP
 plt.plot(tt,VOD_ma,'ob',label='SMAP')
 
 # plt.plot(tt,VOD_hat_full,'--k',label='Forward run')
@@ -175,6 +180,8 @@ plt.plot(tt,VOD_hat_full,'-k')
 plt.legend()
 plt.ylabel('VOD')
 
+plt.figure()
+plt.plot(PSIL_hat)
 # %%
 plt.figure(figsize=(14,3))
 
