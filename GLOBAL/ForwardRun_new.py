@@ -25,23 +25,24 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-119
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,200,40)
+warmup, nsample,thinning = (0.8,100,40)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 40
-#nsites_per_id = 2
+#arrayid = 0
+#nsites_per_id = 10
 #warmup, nsample,thinning = (0.8,2,40)
 
-versionpath = parentpath + 'Retrieval_SM/'
-inpath = parentpath+ 'Input/'
-outpath = versionpath +'Output/'
+versionpath = parentpath + 'Global_0817/'
+inpath = parentpath+ 'Input_Global/'
+outpath = versionpath +'Output_bkp/'
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 
 MODE = 'VOD_SM_ET'
-SiteInfo = pd.read_csv('../Utilities/SiteInfo_US_full.csv')
+varnames, bounds = get_var_bounds(MODE)
+SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 
 
 
@@ -49,15 +50,24 @@ def calR2(yhat,y):
     return 1-np.nanmean((y-yhat)**2)/np.nanmean((y-np.nanmean(y))**2)
 
 
-OBS_mean = []; OBS_std = []
-TS_mean = []; TS_std = []
-PARA_mean = []; PARA_std = []
-ACC = []
+OBS_mean = []; OBS_std = []; OBSnan = [np.nan for i in range(8)]
+TS_mean = []; TS_std = []; TSnan = [np.nan for i in range(4)]
+PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
+ACC = []; ACCnan = [np.nan for i in range(4)]
 
-for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
+for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
 
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
-    Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+    try:
+        Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+    except FileNotFoundError as err:
+        print(err)
+        OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
+        TS_mean.append(TSnan); TS_std.append(TSnan)
+        PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
+        ACC.append(ACCnan)
+        continue
+
     VOD_ma = np.reshape(VOD,[-1,2])
     VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
     
@@ -203,18 +213,18 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         return phil_list,e_list+t_list,s1_list#,s2_list
     
     
-    dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
-    wVPD = hour2week(VPD)[~discard_et]
-    hSOILM = np.zeros(VPD.shape)+np.nan
-    hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
-    wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
+    #dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
+    #wVPD = hour2week(VPD)[~discard_et]
+    #hSOILM = np.zeros(VPD.shape)+np.nan
+    #hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
+    #wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
     
-    wet = (SOILM>np.nanpercentile(SOILM,70)) & (dVPD<np.nanpercentile(dVPD,30)) # one per day
-    dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
-    dwet = np.repeat(wet,2) # two per day
-    ddry = np.repeat(dry,2) 
-    wwet = (wSOILM>np.nanpercentile(wSOILM,70)) & (wVPD<np.nanpercentile(wVPD,30)) # per week
-    wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
+    #wet = (SOILM>np.nanpercentile(SOILM,70)) & (dVPD<np.nanpercentile(dVPD,30)) # one per day
+    #dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
+    #dwet = np.repeat(wet,2) # two per day
+    #ddry = np.repeat(dry,2) 
+    #wwet = (wSOILM>np.nanpercentile(wSOILM,70)) & (wVPD<np.nanpercentile(wVPD,30)) # per week
+    #wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
     
     
     valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
@@ -223,15 +233,25 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     cdf1 = np.cumsum(counts)/sum(counts)
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
-    varnames, bounds = get_var_bounds(MODE)    
-    trace = GetTrace(PREFIX,varnames,0,optimal=False)
-    trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
+    print(PREFIX)
+#    varnames, bounds = get_var_bounds(MODE)    
+#    trace = GetTrace(PREFIX,varnames,0,optimal=False)
+    chainid = 0
+    try:
+        trace = GetTrace(PREFIX,warmup,chainid)
+    except IndexError as err:
+        print(err)
+        OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
+        TS_mean.append(TSnan); TS_std.append(TSnan)
+        PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
+        ACC.append(ACCnan)
+        continue
+#    trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
           
     TS = [[] for i in range(4)]
     PARA = [[] for i in range(2)]
     
     for count in range(nsample):
-        print(count)
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
         try:
             tmp = trace['g1'].iloc[idx_s]
@@ -274,10 +294,13 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     PARA_ensembel_mean = np.concatenate([np.nanmean(itm,axis=0) for itm in PARA[::-1]])
     PARA_ensembel_std = np.concatenate([np.nanstd(itm,axis=0) for itm in PARA[::-1]])
     
-    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
-    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
-    
-    
+#    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
+#    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
+#    print("TS")
+#    print(len(TS_temporal_mean), len(TS_temporal_std))
+#    print("PARA")
+#    print(len(PARA_ensembel_mean), len(PARA_ensembel_std))
+        
     # ======== OBS stats ===========
     OBS = (VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI)
     OBS_temporal_mean = [np.nanmean(itm) for itm in OBS]
@@ -287,25 +310,26 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     # OBS_temporal_std.append(np.nan)
     # OBS_temporal_mean.append(np.nanmean(ET[wwet])/np.nanmean(ET[wdry]))
     # OBS_temporal_std.append(np.nan)
-    res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
-    if res!=0:
-        OBS_temporal_mean.append(res.params[0])
-        OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
-    else:
-        OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
-    OBS_mean.append(OBS_temporal_mean)
-    OBS_std.append(OBS_temporal_std)
-
+    #res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
+    #if res!=0:
+    #    OBS_temporal_mean.append(res.params[0])
+    #    OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
+    #else:
+    #    OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
+    #OBS_mean.append(OBS_temporal_mean)
+    #OBS_std.append(OBS_temporal_std)
+    #print("OBS m, std:")
+    #print(len(OBS_temporal_mean),len(OBS_temporal_std));
     
     
     # ========= Convergence and perofrmance ==========
     sample_length = int(3e3); step = int(5e2)
     st_list = range(1000,int(len(trace)/sample_length)*sample_length-sample_length+1,step)
     Geweke = []
-    chainid = 0
     # for varname in varnames[:-1]:
     varname= 'psi50X'
-    chain = np.array(trace[varname][trace['chain']==chainid])
+    chain = np.array(trace[varname])
+    #chain = np.array(trace[varname][trace['chain']==chainid])
     chain = chain[:int(len(chain)/sample_length)*sample_length] 
     for st in st_list:
         tmps = chain[st:(st+sample_length)]
@@ -313,12 +337,23 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
         Geweke.append((np.nanmean(tmps)-np.nanmean(tmpe))/np.sqrt(np.nanvar(tmps)+np.nanvar(tmpe)))
     Geweke = np.abs(np.array(Geweke))
     
-    r2_vod = np.apply_along_axis(nancorr,1,TS[0],VOD_ma)**2
-    r2_et = np.apply_along_axis(nancorr,1,TS[1],ET)**2
-    r2_sm = np.apply_along_axis(nancorr,1,TS[3],SOILM)**2
-    ACC.append([np.nanmax(r2_vod),np.nanmax(r2_et),np.nanmax(r2_sm),np.nanpercentile(Geweke,25)])
+    #r2_vod = np.apply_along_axis(nancorr,1,TS[0],VOD_ma)**2
+    #r2_et = np.apply_along_axis(nancorr,1,TS[1],ET)**2
+    #r2_sm = np.apply_along_axis(nancorr,1,TS[3],SOILM)**2
+    er2_vod = nancorr(np.nanmean(TS[0],axis=0),VOD_ma)**2
+    er2_et = nancorr(np.nanmean(TS[1],axis=0),ET)**2
+    er2_sm = nancorr(np.nanmean(TS[3],axis=0),SOILM)**2
+    acc_summary = [er2_vod,er2_et,er2_sm,np.nanpercentile(Geweke,25)]
+    #print(acc_summary)
+    #acc_summary = [np.nanmax(r2_vod),np.nanmax(r2_et),np.nanmax(r2_sm),np.nanpercentile(Geweke,25)]
+    #print(acc_summary)
     
+    OBS_mean.append(OBS_temporal_mean); OBS_std.append(OBS_temporal_std)
+    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
+    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
+    ACC.append(acc_summary)
 
+    
 OBS_mean = np.reshape(np.array(OBS_mean),[nsites_per_id,-1])
 OBS_std = np.reshape(np.array(OBS_std),[nsites_per_id,-1])
 TS_mean = np.reshape(np.array(TS_mean),[nsites_per_id,-1])
@@ -327,6 +362,8 @@ PARA_mean = np.reshape(np.array(PARA_mean),[nsites_per_id,-1])
 PARA_std = np.reshape(np.array(PARA_std),[nsites_per_id,-1])
 ACC = np.reshape(np.array(ACC),[nsites_per_id,-1])
 
+#print(OBS_mean.shape,TS_mean.shape,PARA_mean.shape,ACC.shape)
+#print(ACC)
 
 obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
 with open(obsname, 'wb') as f: 
