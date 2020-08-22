@@ -30,13 +30,13 @@ nsites_per_id = 100
 warmup, nsample,thinning = (0.8,100,40)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 0
-#nsites_per_id = 10
+#arrayid = 1
+#nsites_per_id = 30
 #warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
-outpath = versionpath +'Output_bkp/'
+outpath = versionpath +'Output/'
 forwardpath = versionpath+'Forward/'
 statspath = versionpath+'STATS/'
 
@@ -293,7 +293,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
     PARA_ensembel_mean = np.concatenate([np.nanmean(itm,axis=0) for itm in PARA[::-1]])
     PARA_ensembel_std = np.concatenate([np.nanstd(itm,axis=0) for itm in PARA[::-1]])
-    
+    print(PARA_ensembel_mean)    
 #    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
 #    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
 #    print("TS")
@@ -361,7 +361,7 @@ TS_std = np.reshape(np.array(TS_std),[nsites_per_id,-1])
 PARA_mean = np.reshape(np.array(PARA_mean),[nsites_per_id,-1])
 PARA_std = np.reshape(np.array(PARA_std),[nsites_per_id,-1])
 ACC = np.reshape(np.array(ACC),[nsites_per_id,-1])
-
+#print(PARA_mean)
 #print(OBS_mean.shape,TS_mean.shape,PARA_mean.shape,ACC.shape)
 #print(ACC)
 
