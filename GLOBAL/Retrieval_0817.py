@@ -27,15 +27,15 @@ from Utilities import MovAvg
 import sys
 
 # =========================== control pannel =============================
-parentpath = '/scratch/users/yanlan/'
-baseid = int(sys.argv[1])
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])*94+baseid # 0-93
-samplenum = (15,2000)
+# parentpath = '/scratch/users/yanlan/'
+# baseid = int(sys.argv[1])
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])+baseid*1000 # 0-999
+# samplenum = (25,2000)
 
 
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 999*93+baseid # 0-5, 10-15, 20-25, 30-35
-#samplenum = (3,20) # number of chuncks, number of samples per chunck
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 3122 # 0-5, 10-15, 20-25, 30-35
+samplenum = (3,20) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'Global_0817/'; hyperpara = (0.1,0.05,20)
 
@@ -48,12 +48,9 @@ fid = int(arrayid)
 chainid = 0#int(fid-fid*chains_per_site)
 
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
-if fid>=len(SiteInfo):
-    print("fid>len(SiteInfo)")
-    sys.exit(1)
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
-print(fid,PREFIX)
+print(PREFIX)
 
 if SiteInfo.iloc[fid]['IGBP']==1:  # ENF
     def f_p50_prior(p50): return np.log(gev.pdf(-p50, 0.65, -4.43, 1.94)+1e-20)
@@ -73,17 +70,20 @@ else: #DBF and MF
     
 # =========================== read input =================================
 #%%
-try:
+try: 
     Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
 except FileNotFoundError as err:
     print(err)
     sys.exit(1)
-
+    
+    
 VOD_ma = np.reshape(VOD,[-1,2])
 VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)]),[-1,])
 
 Z_r,tx = (SiteInfo['Root depth'][fid]*1000,int(SiteInfo['Soil texture'][fid]))
 
+# Z_r = 3120
+# psi0cm = 48
 psi0cm = CLAPP.psat[tx]
 phi0 = -psi0cm/100*9.8*1000/10**6 #MPa # *10**6/9.8 
 phi0_mm = -psi0cm*10 # mm
@@ -107,8 +107,12 @@ Kc = 300*np.exp(0.074*(T_C-25)) # umol/mol
 Ko = 300*np.exp(0.015*(T_C-25)) # mmol/mol
 cp = 36.9+1.18*(T_C-25)+0.036*(T_C-25)**2
 Vcmax25 = SiteInfo['Vcmax25'][fid]
+# Jmax25 = np.exp(1)*Vcmax25
+# Vcmax0 = Vcmax25*np.exp(0.88*(T_C-25))/(1+np.exp(0.29*(T_C-41))) 
 Vcmax0 = Vcmax25*np.exp(50*(TEMP-298)/(298*CONST.R*TEMP)) 
 Jmax = Vcmax0*np.exp(1)
+# Vcmax0 = OB.koptv*OB.Hdv*np.exp(OB.Hav*(TEMP-OB.Toptv)/TEMP/CONST.R/OB.Toptv)/(OB.Hdv-OB.Hav*(1-np.exp(OB.Hav*(TEMP-OB.Toptv)/TEMP/CONST.R/OB.Toptv)))
+# Jmax = OB.koptj*OB.Hdj*np.exp(OB.Haj*(TEMP-OB.Toptj)/TEMP/CONST.R/OB.Toptj)/(OB.Hdj-OB.Haj*(1-np.exp(OB.Haj*(TEMP-OB.Toptj)/TEMP/CONST.R/OB.Toptj))) 
 J = (OB.kai2*PAR+Jmax-np.sqrt((OB.kai2*PAR+Jmax)**2-4*OB.kai1*OB.kai2*PAR*Jmax))/2/OB.kai1
 
 # Terms in Penman-Monteith Equation
@@ -130,7 +134,7 @@ def advance_linearize(s2,phiL,ti,gpmax,C,psi50X,bexp,timestep):
     
     f_const = gpmax*(1+a*phiL)*delta_phi
     f_x = gpmax*(a*delta_phi + (1+a*phiL)*(-1))
-    #f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2-phiL) # need to double check
+    # f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2-phiL) # need to double check
     f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2) # need to double check
     # f_y = gpmax*(1+a*phiL)*(phi0*n**bexp*s2**(-bexp-1)*(-bexp))
     j0 = f_const - f_x*phiL - f_y*s2
@@ -271,5 +275,26 @@ tic = time.perf_counter()
 # AMIS(Gaussian_loglik,PREFIX,samplenum,hyperpara)
 AMIS(Gaussian_loglik,PREFIX,varnames, bounds,p50_init,samplenum,hyperpara)
 toc = time.perf_counter()
-print(f"Sampling time: {toc-tic:0.4f} seconds")
+print(f"Sampling time (10 samples): {toc-tic:0.4f} seconds")
+
+#%%
+jlist = []
+for i in range(0,12):
+    
+    for j in range(i,94,12):
+        print("python Retrieval_0817.py "+str(j))
+        jlist.append(j)
+    print("\n")
+    
+# g1, lpx, psi50X, gpmax,C, bexp, sbot = theta
+# import matplotlib.pyplot as plt
+# theta = [1.5,0.7,8,0.2,1,6,0.3]
+# phil_list,et_list = runhh_2soil_hydro(theta)
+
+# plt.figure();plt.plot(phil_list);plt.ylabel('psil')
+# plt.figure();plt.plot(et_list);plt.ylabel('et')
+
+# plt.figure();plt.plot(t_list);plt.ylabel('t')
+# plt.figure();plt.plot(s1_list);plt.ylabel('s1')
+# plt.figure();plt.plot(s2_list);plt.ylabel('s2')
 
