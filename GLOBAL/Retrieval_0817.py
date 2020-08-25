@@ -30,7 +30,7 @@ import sys
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])*94+baseid # 0-93
-samplenum = (15,2000)
+samplenum = (20,2000)
 
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'

@@ -25,12 +25,12 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
 warmup, nsample,thinning = (0.8,100,40)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 1
+arrayid = 1
 #nsites_per_id = 30
 #warmup, nsample,thinning = (0.8,2,40)
 
@@ -56,7 +56,7 @@ PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
-
+    print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
@@ -121,8 +121,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
      
         f_const = gpmax*(1+a*phiL)*delta_phi
         f_x = gpmax*(a*delta_phi + (1+a*phiL)*(-1))
-        f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2-phiL) # need to double check
-        # f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2) # need to double check
+        # f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2-phiL) # need to double check
+        f_y = gpmax*(1+a*phiL)*(phiS2*(-bexp)/s2) # need to double check
         # f_y = gpmax*(1+a*phiL)*(phi0*n**bexp*s2**(-bexp-1)*(-bexp))
         j0 = f_const - f_x*phiL - f_y*s2
         jp = f_x
@@ -188,7 +188,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
                 for subt in np.arange(tdiv):
                     condS = max(min(1-phiL/(2*psi50L),1),0)
                     tlist[subt] = get_ti(clm,condS)               
-                    s2, phiL = advance_linearize(s2,phiL,ti,gpmax,C,psi50X,bexp,dt/tdiv)
+                    s2, phiL = advance_linearize(s2,phiL,tlist[subt],gpmax,C,psi50X,bexp,dt/tdiv)
                 ti = np.mean(tlist)
             
             ei= petVnumB[i]*(s1/n) #**bexp#*s1/n#*soilfac#*((s1-smcwilt)/(n-smcwilt)**(1))
@@ -204,7 +204,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             
             s1 = max(s1-f12/d1,0.05)
             s2 = min(max(s2+f12/d2 - f23/d2,0.05),n) 
-        
+            phiL = max(psi50X*2,phiL)
+ 
             s1_list[i] = np.copy(s1); s2_list[i] = np.copy(s2)
             e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
             
