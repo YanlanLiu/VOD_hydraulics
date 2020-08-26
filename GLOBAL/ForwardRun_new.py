@@ -25,13 +25,13 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
 warmup, nsample,thinning = (0.8,100,40)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 1
-#nsites_per_id = 30
+#arrayid = 0#4672
+#nsites_per_id = 20
 #warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
@@ -56,7 +56,6 @@ PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
-    print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
@@ -104,7 +103,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     J = (OB.kai2*PAR+Jmax-np.sqrt((OB.kai2*PAR+Jmax)**2-4*OB.kai1*OB.kai2*PAR*Jmax))/2/OB.kai1
     
     # Terms in Penman-Monteith Equation
-    VPD_kPa = VPD*101.325#VPD*Psurf
+    VPD_kPa = VPD*Psurf
     sV = 0.04145*np.exp(0.06088*T_C) #in Kpa
     RNg = np.array(RNET*np.exp(-LAI*VegK))
     petVnum = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60  #kg/s/m2/CONST.lambda0*60*60
@@ -164,14 +163,14 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         k3 = ksoil*(sbot/n)**(2*bexp) 
         
         phil_list = np.zeros([N,])
-        # et_list = np.zeros([N,])
+        et_list = np.zeros([N,])
         
         s1 = np.copy(sinit)
         s2 = np.copy(sinit) 
         phiL = phi0*(s2/n)**(-bexp) - 0.01
         
         s1_list = np.zeros([N,]); s2_list = np.zeros([N,])
-        e_list = np.zeros([N,]); t_list = np.zeros([N,])
+        # e_list = np.zeros([N,]); t_list = np.zeros([N,])
         
         for i in np.arange(N):
     
@@ -205,13 +204,13 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             s1 = max(s1-f12/d1,0.05)
             s2 = min(max(s2+f12/d2 - f23/d2,0.05),n) 
             phiL = max(psi50X*2,phiL)
- 
+            
             s1_list[i] = np.copy(s1); s2_list[i] = np.copy(s2)
-            e_list[i] = np.copy(ei); t_list[i] = np.copy(ti)
+            et_list[i] = ei+ti
             
         s1_list[np.isnan(s1_list)] = np.nanmean(s1_list); s1_list[s1_list>1] = 1; s1_list[s1_list<0] = 0
         
-        return phil_list,e_list+t_list,s1_list#,s2_list
+        return phil_list,et_list,s1_list#,s2_list
     
     
     #dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
@@ -294,7 +293,6 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
     PARA_ensembel_mean = np.concatenate([np.nanmean(itm,axis=0) for itm in PARA[::-1]])
     PARA_ensembel_std = np.concatenate([np.nanstd(itm,axis=0) for itm in PARA[::-1]])
-    print(PARA_ensembel_mean)    
 #    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
 #    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
 #    print("TS")
@@ -353,15 +351,17 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
     PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
     ACC.append(acc_summary)
-
-    
-OBS_mean = np.reshape(np.array(OBS_mean),[nsites_per_id,-1])
-OBS_std = np.reshape(np.array(OBS_std),[nsites_per_id,-1])
-TS_mean = np.reshape(np.array(TS_mean),[nsites_per_id,-1])
-TS_std = np.reshape(np.array(TS_std),[nsites_per_id,-1])
-PARA_mean = np.reshape(np.array(PARA_mean),[nsites_per_id,-1])
-PARA_std = np.reshape(np.array(PARA_std),[nsites_per_id,-1])
-ACC = np.reshape(np.array(ACC),[nsites_per_id,-1])
+#print(np.array(ACC))
+#nn = int(len(ACC)/4);print(nn)
+nn = np.array(ACC).shape[0];print(nn)
+OBS_mean = np.reshape(np.array(OBS_mean),[nn,-1])
+OBS_std = np.reshape(np.array(OBS_std),[nn,-1])
+TS_mean = np.reshape(np.array(TS_mean),[nn,-1])
+TS_std = np.reshape(np.array(TS_std),[nn,-1])
+PARA_mean = np.reshape(np.array(PARA_mean),[nn,-1])
+PARA_std = np.reshape(np.array(PARA_std),[nn,-1])
+#ACC = np.reshape(np.array(ACC),[nn,-1])
+ACC = np.array(ACC)
 #print(PARA_mean)
 #print(OBS_mean.shape,TS_mean.shape,PARA_mean.shape,ACC.shape)
 #print(ACC)
