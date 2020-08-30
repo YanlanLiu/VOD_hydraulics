@@ -30,7 +30,7 @@ import sys
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])*94+baseid # 0-93
-samplenum = (20,2000)
+samplenum = (15,2000)
 
 # parentpath = '/scratch/users/yanlan/'
 # baseid = int(sys.argv[1])
@@ -38,9 +38,9 @@ samplenum = (20,2000)
 # samplenum = (25,2000)
 
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 3122 # 0-5, 10-15, 20-25, 30-35
-samplenum = (3,20) # number of chuncks, number of samples per chunck
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 3122 # 0-5, 10-15, 20-25, 30-35
+#samplenum = (3,20) # number of chuncks, number of samples per chunck
 
 versionpath = parentpath + 'Global_0817/'; hyperpara = (0.1,0.05,20)
 
@@ -50,9 +50,12 @@ MODE = 'VOD_SM_ET'
 
 chains_per_site = 1
 fid = int(arrayid)
-chainid = 0#int(fid-fid*chains_per_site)
+chainid = 1#int(fid-fid*chains_per_site)
 
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
+if fid>=len(SiteInfo):
+     print("fid>len(SiteInfo)")
+     sys.exit(1)
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)
 print(PREFIX)
@@ -87,8 +90,6 @@ VOD_ma = np.reshape(np.column_stack([MovAvg(VOD_ma[:,0],4),MovAvg(VOD_ma[:,1],4)
 
 Z_r,tx = (SiteInfo['Root depth'][fid]*1000,int(SiteInfo['Soil texture'][fid]))
 
-# Z_r = 3120
-# psi0cm = 48
 psi0cm = CLAPP.psat[tx]
 phi0 = -psi0cm/100*9.8*1000/10**6 #MPa # *10**6/9.8 
 phi0_mm = -psi0cm*10 # mm
