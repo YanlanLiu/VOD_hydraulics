@@ -40,7 +40,7 @@ for arrayid in range(933):
         # print(PARA_mean.shape)
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
-            Collection_PARA[subrange,:] = PARA_mean
+            Collection_PARA[subrange,:] = PARA_std
             
 # for arrayid in range(933):
 #     if np.mod(arrayid,100)==0:print(arrayid)
@@ -59,6 +59,7 @@ for arrayid in range(933):
 mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
 def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+    heatmap1_data[578] = np.nan
     plt.figure(figsize=(13.2,5))
     m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
     m.drawcoastlines()
@@ -86,14 +87,31 @@ plotmap(df_acc,'r2_sm')
 #%%
 df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
+df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 #%%
 cmap0 = 'RdYlBu_r'
-plotmap(df_para,'C',vmin=0.1,vmax=2,cmap=cmap0)
-# plotmap(df_para,'g1',vmin=0,vmax=1,cmap=cmap0)
+plotmap(df_para,'psi50X',vmin=0,vmax=.2,cmap=cmap0)
+plotmap(df_para,'g1',vmin=0,vmax=.2,cmap=cmap0)
 # plotmap(df_para,'C',vmin=0,vmax=25,cmap=cmap0)
-# plotmap(df_para,'lpx',vmin=0,vmax=1,cmap=cmap0)
+
+# plotmap(df_para,'lpx',vmin=0,vmax=3,cmap=cmap0)
 # plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0)
 
+#%%
+# plotmap(df_para,'IGBP',vmin=0,vmax=14,cmap=cmap0)
+# tmp = df_para.copy()
+# # tmp['psi50X'][tmp['psi50X'].isna()] = 5
+# plotmap(tmp.dropna(),'IGBP',vmin=0,vmax=14,cmap=cmap0)
+
+# df_para.iloc[69180:69398].isna().sum()
+lat,lon = LatLon(df_para['row'],df_para['col'])
+df_para['psi50X'][(lon>-35)&(lon<-17)] = np.nan
+# tmp = df_para.dropna()
+
+heatmap1_data = pd.pivot_table(df_para, values='psi50X', index='row', columns='col')
+# heatmap1_data[380:420][576:599] = np.nan
+# lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+plt.pcolormesh(lon,lat,heatmap1_data)
 
 #%% PFT-based comparison
 IGBP_try = ['GRA','DBF','EBF','SHB','ENF']
@@ -145,7 +163,7 @@ plt.legend(bbox_to_anchor=(1.05,1.05))
 
 c1 = sns.color_palette("Paired")[2]
 c2 = sns.color_palette("Paired")[3]
-IGBP_lin = ['ENF','EBF','SHB','GRA','CRO']
+IGBP_lin = ['ENF','DBF','SHB','GRA','CRO']
 Lin_mean = np.array([2.35,3.97,4.22,4.5,5.79])
 Lin_std = np.array([0.25,0.06,0.72,0.37,0.64])
 G1mean = [np.nanmean(df_para['g1'][IGBPnames==itm]) for itm in IGBP_lin]
@@ -170,7 +188,7 @@ plt.ylabel('g1')
 plt.legend(bbox_to_anchor=(1.05,1.05))
 
 #%%
-sns.color_palette("Paired")
+sns.color_palette("Set2")
 
 
 

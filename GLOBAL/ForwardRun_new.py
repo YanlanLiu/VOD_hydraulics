@@ -29,10 +29,10 @@ arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
 warmup, nsample,thinning = (0.8,50,40)
 
-#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 0#4672
-#nsites_per_id = 20
-#warmup, nsample,thinning = (0.8,2,40)
+# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+# arrayid = 10#4672
+# nsites_per_id = 100
+# warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -44,7 +44,7 @@ MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 
-
+#%%
 
 def calR2(yhat,y):
     return 1-np.nanmean((y-yhat)**2)/np.nanmean((y-np.nanmean(y))**2)
@@ -211,21 +211,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         s1_list[np.isnan(s1_list)] = np.nanmean(s1_list); s1_list[s1_list>1] = 1; s1_list[s1_list<0] = 0
         
         return phil_list,et_list,s1_list#,s2_list
-    
-    
-    #dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
-    #wVPD = hour2week(VPD)[~discard_et]
-    #hSOILM = np.zeros(VPD.shape)+np.nan
-    #hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
-    #wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
-    
-    #wet = (SOILM>np.nanpercentile(SOILM,70)) & (dVPD<np.nanpercentile(dVPD,30)) # one per day
-    #dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
-    #dwet = np.repeat(wet,2) # two per day
-    #ddry = np.repeat(dry,2) 
-    #wwet = (wSOILM>np.nanpercentile(wSOILM,70)) & (wVPD<np.nanpercentile(wVPD,30)) # per week
-    #wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
-    
+        
     
     valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
     bins = np.arange(0,1.02,0.01)
@@ -234,11 +220,11 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
     print(PREFIX)
-#    varnames, bounds = get_var_bounds(MODE)    
-#    trace = GetTrace(PREFIX,varnames,0,optimal=False)
     chainid = 0
     try:
-        trace = GetTrace(PREFIX,warmup,chainid)
+        trace = GetTrace(PREFIX,0,chainid).sort_values(by=['loglik']).reset_index().drop(columns=['index'])  
+        trace = trace[int(len(trace)*warmup):].reset_index().drop(columns=['index'])  
+        
     except IndexError as err:
         print(err)
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
@@ -293,42 +279,21 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
     PARA_ensembel_mean = np.concatenate([np.nanmean(itm,axis=0) for itm in PARA[::-1]])
     PARA_ensembel_std = np.concatenate([np.nanstd(itm,axis=0) for itm in PARA[::-1]])
-#    TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
-#    PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
-#    print("TS")
-#    print(len(TS_temporal_mean), len(TS_temporal_std))
-#    print("PARA")
-#    print(len(PARA_ensembel_mean), len(PARA_ensembel_std))
+
         
     # ======== OBS stats ===========
     OBS = (VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI)
     OBS_temporal_mean = [np.nanmean(itm) for itm in OBS]
     OBS_temporal_std = [np.nanstd(itm) for itm in OBS]
-    
-    # OBS_temporal_mean.append(np.nanmean(VOD_ma[dwet])/np.nanmean(VOD_ma[ddry]))
-    # OBS_temporal_std.append(np.nan)
-    # OBS_temporal_mean.append(np.nanmean(ET[wwet])/np.nanmean(ET[wdry]))
-    # OBS_temporal_std.append(np.nan)
-    #res = nanOLS(np.column_stack([VOD_ma[::2],dLAI[::2]]), VOD_ma[1::2])
-    #if res!=0:
-    #    OBS_temporal_mean.append(res.params[0])
-    #    OBS_temporal_std.append(res.params[0]-res.conf_int(0.32)[0,0])
-    #else:
-    #    OBS_temporal_mean.append(res); OBS_temporal_std.append(res)
-    #OBS_mean.append(OBS_temporal_mean)
-    #OBS_std.append(OBS_temporal_std)
-    #print("OBS m, std:")
-    #print(len(OBS_temporal_mean),len(OBS_temporal_std));
+
     
     
     # ========= Convergence and perofrmance ==========
     sample_length = int(3e3); step = int(5e2)
     st_list = range(1000,int(len(trace)/sample_length)*sample_length-sample_length+1,step)
     Geweke = []
-    # for varname in varnames[:-1]:
     varname= 'psi50X'
     chain = np.array(trace[varname])
-    #chain = np.array(trace[varname][trace['chain']==chainid])
     chain = chain[:int(len(chain)/sample_length)*sample_length] 
     for st in st_list:
         tmps = chain[st:(st+sample_length)]
