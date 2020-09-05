@@ -339,10 +339,13 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)),singular
 
 
-def GetTrace(PREFIX,warmup=0,chainid=0):
-    flist = glob.glob(PREFIX+str(chainid).zfill(2)+'*.pickle')
+def GetTrace(PREFIX,warmup=0):
+    flist = glob.glob(PREFIX+'*.pickle')
+    flist.sort()
     chunck_idx = len(flist[0])-9
+    chain_idx = len(PREFIX)+1
     for outname in flist:
+        chainid = int(outname[chain_idx:chain_idx+1])
         trace = pd.read_pickle(outname)
         if outname==flist[0]:varnames = list(trace)
         niter = len(trace)-1
@@ -355,6 +358,8 @@ def GetTrace(PREFIX,warmup=0,chainid=0):
         else: trace_df = pd.concat([trace_df,tmp])
     trace_df = trace_df[trace_df['step']>trace_df['step'].max()*warmup].sort_values(['step']).dropna().reset_index().drop(columns=['index','level_0','chain','chunk','step'])
     return trace_df
+
+
 
 # def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):
 #     forwardname = forwardpath+MODE+sitename+'.pkl'

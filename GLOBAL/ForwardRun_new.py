@@ -25,14 +25,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-#nsites_per_id = 100
-#warmup, nsample,thinning = (0.8,50,40)
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+nsites_per_id = 100
+warmup, nsample,thinning = (0.8,50,10)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 44#4672
-nsites_per_id = 100
-warmup, nsample,thinning = (0.8,2,40)
+#arrayid = 44#4672
+#nsites_per_id = 100
+#warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -184,7 +184,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
                 s2 = np.copy(s2_pred)
                 phiL = np.copy(phiL_pred)
             else:
-                print('tdiv...')
+                #print('tdiv...')
                 tlist = np.zeros(tdiv)
                 for subt in np.arange(tdiv):
                     condS = max(min(1-phiL/(2*psi50L),1),0)
@@ -222,13 +222,12 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
     print(PREFIX)
-    chainid = 0
     try:
-        trace = GetTrace(PREFIX,0,chainid).sort_values(by=['loglik']).reset_index().drop(columns=['index'])  
+        trace = GetTrace(PREFIX,0)
+        trace = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index'])  
         trace = trace[int(len(trace)*warmup):].reset_index().drop(columns=['index'])  
         
-    except IndexError as err:
-        print(err)
+    except :
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
@@ -251,8 +250,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         theta = trace.iloc[idx_s][varnames].values
         tic0 = time.perf_counter()
         PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
-        toc0 = time.perf_counter()
-        print(f"net run time: {toc-tic:0.4f} seconds")
+        #toc0 = time.perf_counter()
+        #print(f"net run time: {toc0-tic:0.4f} seconds")
 
         
         # ET_ampm = hour2day(E_hat+T_hat,[idx[1]-1,idx[1]])[~discard_vod]
@@ -272,8 +271,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
         PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta))]
         
-        toc = time.perf_counter()
-        print(f"Sample time: {toc-tic:0.4f} seconds")
+        #toc = time.perf_counter()
+        #print(f"Sample time: {toc-tic:0.4f} seconds")
 
     TS = [np.reshape(itm,[nsample,-1]) for itm in TS] # VOD,ET,PSIL,S1
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]

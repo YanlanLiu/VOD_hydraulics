@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=fw
-#SBATCH --output=JobInfo/%x_%a.out
-#SBATCH --error=JobInfo/%x_%a.err
+#SBATCH --output=JobInfo_FW/%x_%a.out
+#SBATCH --error=JobInfo_FW/%x_%a.err
 #SBATCH --array=0-934
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
