@@ -26,12 +26,12 @@ tic = time.perf_counter()
 
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-nsites_per_id = 100
+nsites_per_id = 1000
 # warmup, nsample,thinning = (0.8,50,40)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-# arrayid = 10#4672
-# nsites_per_id = 100
+#arrayid = 10#4672
+#nsites_per_id = 2
 # warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
@@ -57,6 +57,7 @@ def calR2(yhat,y):
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):#range(953,954):#
+    print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
@@ -244,11 +245,9 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     er2_et = nancorr(TS[1],ET)**2
     er2_sm = nancorr(TS[3],SOILM)**2
     
-    coeffdet = [calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
-    acc_summary = [er2_vod,er2_et,er2_sm,coeffdet]
+    acc_summary = [er2_vod,er2_et,er2_sm,calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
 
     ACC.append(acc_summary)
-
 ACC = np.array(ACC)
 
 

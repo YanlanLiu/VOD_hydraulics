@@ -25,14 +25,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-nsites_per_id = 100
-warmup, nsample,thinning = (0.8,50,40)
+#arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+#nsites_per_id = 100
+#warmup, nsample,thinning = (0.8,50,40)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-# arrayid = 10#4672
-# nsites_per_id = 100
-# warmup, nsample,thinning = (0.8,2,40)
+arrayid = 44#4672
+nsites_per_id = 100
+warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -57,6 +57,7 @@ ACC = []; ACCnan = [np.nan for i in range(4)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
+    print(sitename)
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
     except FileNotFoundError as err:
@@ -183,6 +184,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
                 s2 = np.copy(s2_pred)
                 phiL = np.copy(phiL_pred)
             else:
+                print('tdiv...')
                 tlist = np.zeros(tdiv)
                 for subt in np.arange(tdiv):
                     condS = max(min(1-phiL/(2*psi50L),1),0)
@@ -239,6 +241,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     
     for count in range(nsample):
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
+        print(idx_s)
         try:
             tmp = trace['g1'].iloc[idx_s]
         except IndexError:
@@ -246,8 +249,11 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             print(idx_s)
             print(sitename) 
         theta = trace.iloc[idx_s][varnames].values
+        tic0 = time.perf_counter()
         PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
-    
+        toc0 = time.perf_counter()
+        print(f"net run time: {toc-tic:0.4f} seconds")
+
         
         # ET_ampm = hour2day(E_hat+T_hat,[idx[1]-1,idx[1]])[~discard_vod]
         ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
@@ -265,7 +271,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
 
         TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
         PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta))]
-    
+        
+        toc = time.perf_counter()
+        print(f"Sample time: {toc-tic:0.4f} seconds")
+
     TS = [np.reshape(itm,[nsample,-1]) for itm in TS] # VOD,ET,PSIL,S1
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]
         
@@ -316,6 +325,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
     PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
     ACC.append(acc_summary)
+    toc = time.perf_counter()
+    print(f"Site time: {toc-tic:0.4f} seconds")
+
+
 #print(np.array(ACC))
 #nn = int(len(ACC)/4);print(nn)
 nn = np.array(ACC).shape[0];print(nn)
@@ -345,9 +358,7 @@ with open(estname, 'wb') as f:
 # g1,lpx,psi50X,C,bexp,bc,sigma_et,sigma_vod,loglik,a,b,c = PARA_mean[sub_fid,:] # (PARA_std[sub_fid,:]) ensemble mean (std)
 # r2_vod,r2_et,r2_sm,Geweke = ACC[sub_fid,:]
 
-toc = time.perf_counter()
-    
-    
+toc = time.perf_counter()    
 print(f"Running time (20 sites): {toc-tic:0.4f} seconds")
 
 

@@ -34,19 +34,19 @@ tic = time.perf_counter()
 
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-nsites_per_id = 100
-warmup, nsample,thinning = (0.8,50,40)
+nsites_per_id = 1000
+#warmup, nsample,thinning = (0.8,50,40)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-# arrayid = 10#4672
-# nsites_per_id = 100
+#arrayid = 10#4672
+#nsites_per_id = 2
 # warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
 # outpath = versionpath +'Output/'
 # forwardpath = versionpath+'Forward/'
-statspath = versionpath+'STATS_C4/'
+statspath = versionpath+'STATS_C12/'
 
 
 MODE = 'VOD_SM_ET'
@@ -226,7 +226,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         
     TS = [[] for i in range(4)]
     
-    theta = np.concatenate([SiteInfo[SiteInfo['clusters_4']==SiteInfo['clusters_4'].iloc[fid]].mean()[varnames[:5]].values,
+    theta = np.concatenate([SiteInfo[SiteInfo['clusters_12']==SiteInfo['clusters_12'].iloc[fid]].median()[varnames[:5]].values,
                             SiteInfo[['bexp','bc']].iloc[fid].values])
 
     # print(theta)
@@ -254,9 +254,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     er2_et = nancorr(TS[1],ET)**2
     er2_sm = nancorr(TS[3],SOILM)**2
     
-    coeffdet = [calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
-    acc_summary = [er2_vod,er2_et,er2_sm,coeffdet]
-
+    acc_summary = [er2_vod,er2_et,er2_sm,calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
     ACC.append(acc_summary)
 
 ACC = np.array(ACC)
