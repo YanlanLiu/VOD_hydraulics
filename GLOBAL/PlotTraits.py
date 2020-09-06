@@ -40,7 +40,7 @@ for arrayid in range(933):
         # print(PARA_mean.shape)
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
-            Collection_PARA[subrange,:] = PARA_std
+            Collection_PARA[subrange,:] = PARA_mean
             
 # for arrayid in range(933):
 #     if np.mod(arrayid,100)==0:print(arrayid)
@@ -85,17 +85,25 @@ plotmap(df_acc,'r2_et')
 plotmap(df_acc,'r2_sm')
 
 #%%
+sns.kdeplot(df_acc['r2_vod'])
+sns.kdeplot(df_acc['r2_et'])
+sns.kdeplot(df_acc['r2_sm'])
+plt.xlabel('R2')
+plt.ylabel('pdf')
+
+
+#%%
 df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 #%%
 cmap0 = 'RdYlBu_r'
-plotmap(df_para,'psi50X',vmin=0,vmax=.2,cmap=cmap0)
-plotmap(df_para,'g1',vmin=0,vmax=.2,cmap=cmap0)
-# plotmap(df_para,'C',vmin=0,vmax=25,cmap=cmap0)
+plotmap(df_para,'psi50X',vmin=0,vmax=6.5,cmap=cmap0)
+plotmap(df_para,'g1',vmin=0,vmax=6.5,cmap=cmap0)
+plotmap(df_para,'C',vmin=0,vmax=26,cmap=cmap0)
 
-# plotmap(df_para,'lpx',vmin=0,vmax=3,cmap=cmap0)
-# plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0)
+plotmap(df_para,'lpx',vmin=0,vmax=4,cmap=cmap0)
+plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0)
 
 #%%
 # plotmap(df_para,'IGBP',vmin=0,vmax=14,cmap=cmap0)
@@ -188,7 +196,38 @@ plt.ylabel('g1')
 plt.legend(bbox_to_anchor=(1.05,1.05))
 
 #%%
-sns.color_palette("Set2")
+import netCDF4
+from scipy import ndimage
 
+fp='../CONUS/Trugman_map/CWM_P50_10Deg.nc'
+nc = netCDF4.Dataset(fp)
+lat = np.array(nc['lat'][:])
+lon = np.array(nc['lon'][:])
+p50_att = ndimage.zoom(np.array(nc['CWM_P50'][:]),(4,4),order=0)
+nplots  = ndimage.zoom(np.array(nc['nplots'][:]),(4,4),order=0)
+# plt.imshow(p50_att)
+
+lat1 = np.arange(min(lat)-0.5+0.25/2,max(lat)+0.5,0.25)
+lon1 = np.arange(min(lon)-0.5+0.25/2,max(lon)+0.5,0.25)
+lat_2d = np.tile(lat1,[len(lon1),1])
+lon_2d = np.transpose(np.tile(lon1,[len(lat1),1]))
+
+fia = pd.DataFrame({'Lat':np.reshape(lat_2d,[-1,]),'Lon':np.reshape(lon_2d,[-1,]),'P50':np.reshape(p50_att,[-1,]),'nplots':np.reshape(nplots,[-1,])})
+
+# heatmap1_data = pd.pivot_table(fia, values='P50', index='Lat', columns='Lon')
+lat0,lon0 = LatLon(df_para['row'],df_para['col'])
+df_para['lat0'] = lat0; df_para['lon0'] = lon0
+
+new_df = pd.merge(df_para,fia,how='left',left_on=['lat0','lon0'],right_on=['Lat','Lon'])
+new_df['IGBPnames'] = IGBPnames
+# new_df['psi50X'] = new_df['psi50X']
+# new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') ]
+if new_df['psi50X'].mean()>0: new_df['psi50X'] = -new_df['psi50X']
+plt.figure(figsize=(6,6))
+xlim = [-13.5,0.5]
+# sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
+sns.scatterplot(x="P50", y="psi50X",s=new_df['nplots']*10,alpha=0.5, hue="IGBPnames",data=new_df)
+plt.legend(bbox_to_anchor=(1.75,1.05))
+plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 
 
