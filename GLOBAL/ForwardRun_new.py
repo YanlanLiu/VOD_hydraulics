@@ -27,7 +27,7 @@ tic = time.perf_counter()
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,50,100)
+warmup, nsample,thinning = (0.8,20,100)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 # arrayid = 44#4672
@@ -59,7 +59,7 @@ PARA2_mean = []; PARA2_std = []; PARA2nan = [np.nan for i in varnames]
 
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
-for fid in range(10,11):#range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
+for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)
     try:
@@ -68,7 +68,7 @@ for fid in range(10,11):#range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_
         SOILM[IsOutlier(SOILM,multiplier=2)] = np.nan
     except FileNotFoundError as err:
         print(err)
-        OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
+        OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
         ACC.append(ACCnan)
