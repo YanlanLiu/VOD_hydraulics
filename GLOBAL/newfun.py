@@ -18,7 +18,7 @@ import numpy as np
 import time
 from scipy.stats import  multivariate_normal,bernoulli,uniform
 from scipy import optimize
-from Utilities import LatLon, toTimestamp,savitzky_golay, dailyAvg, rm_outlier_sn, rm_outlier
+from Utilities import LatLon, toTimestamp,savitzky_golay, dailyAvg, dailyMin, rm_outlier_sn, rm_outlier
 from datetime import datetime, timedelta
 import pandas as pd
 #from utility_funs2 import *
@@ -75,7 +75,7 @@ def readCLM(inpath,sitename):
     leaf_angle_distr = 1
     VegK = LightExtinction(DOY,lat,leaf_angle_distr)
     
-    discard = (dailyAvg(P,nobsinaday)>10/nobsinaday)+(dailyAvg(TEMP-UNIT_3,nobsinaday)<0)
+    discard = (dailyAvg(P,nobsinaday)>10/nobsinaday)+(dailyMin(TEMP-UNIT_3,nobsinaday)<-1)
     discard[:warmup] = True
     discard_vod = np.repeat(discard,2)
     discard_psil = np.repeat(discard,nobsinaday)

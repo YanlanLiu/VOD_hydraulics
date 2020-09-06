@@ -71,6 +71,11 @@ def dailyAvg(data,windowsize):
     data = data[0:windowsize*int(len(data)/windowsize)]
     return np.nanmean(np.reshape(data,[int(len(data)/windowsize),windowsize]),axis=1)
 
+def dailyMin(data,windowsize):
+    data = np.array(data)
+    data = data[0:windowsize*int(len(data)/windowsize)]
+    return np.nanmin(np.reshape(data,[int(len(data)/windowsize),windowsize]),axis=1)
+
 
 def IsOutlier(a,multiplier=3):
     return np.abs(a-np.nanmedian(a))>multiplier*np.nanstd(a)

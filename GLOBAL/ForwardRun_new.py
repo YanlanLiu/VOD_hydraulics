@@ -17,7 +17,7 @@ from newfun import readCLM # newfun_full
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
 from newfun import GetTrace
-from Utilities import nanOLS,nancorr,MovAvg
+from Utilities import nanOLS,nancorr,MovAvg,IsOutlier
 import time
 
 tic = time.perf_counter()
@@ -27,12 +27,12 @@ tic = time.perf_counter()
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,50,10)
+warmup, nsample,thinning = (0.8,50,100)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 44#4672
-#nsites_per_id = 100
-#warmup, nsample,thinning = (0.8,2,40)
+# arrayid = 44#4672
+# nsites_per_id = 100
+# warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -49,17 +49,23 @@ SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 def calR2(yhat,y):
     return 1-np.nanmean((y-yhat)**2)/np.nanmean((y-np.nanmean(y))**2)
 
+RSlist = [125,150,150,100,125,300,170,300,70,40,70,40,200,40,999,999,100,150,150,200]
 
-OBS_mean = []; OBS_std = []; OBSnan = [np.nan for i in range(8)]
+OBS_mean = []; OBS_std = []; OBSnan = [np.nan for i in range(9)]
+OBS_N = []; OBSNnan = [np.nan for i in range(3)]
 TS_mean = []; TS_std = []; TSnan = [np.nan for i in range(4)]
 PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
+PARA2_mean = []; PARA2_std = []; PARA2nan = [np.nan for i in varnames]
+
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
-for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
+for fid in range(10,11):#range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
+        VOD[IsOutlier(VOD,multiplier=2)] = np.nan
+        SOILM[IsOutlier(SOILM,multiplier=2)] = np.nan
     except FileNotFoundError as err:
         print(err)
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
@@ -110,6 +116,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     petVnum = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60  #kg/s/m2/CONST.lambda0*60*60
     # (sV*(rnmg-1*RNgg) + 1.225*1000*myvpd*myga)*(myrn > 0)
     petVnumB = 1.26*(sV*RNg)/(sV+CONST.gammaV)/CONST.lambda0*60*60 
+    
+    PET = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60/(sV+CONST.gammaV*(1+GA*RSlist[SiteInfo['IGBP'].iloc[fid]]))*24 # mm/day
     
     def advance_linearize(s2,phiL,ti,gpmax,C,psi50X,bexp,timestep):
         a = -1/(2*psi50X)
@@ -224,13 +232,16 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     print(PREFIX)
     try:
         trace = GetTrace(PREFIX,0)
-        trace = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index'])  
+        trace = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index']) 
+        halftrace_mean = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].mean().values
+        halftrace_std = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].std().values
         trace = trace[int(len(trace)*warmup):].reset_index().drop(columns=['index'])  
         
     except :
-        OBS_mean.append(OBSnan); OBS_std.append(OBSnan)
+        OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
+        PARA2_mean.append(PARA2nan); PARA2_std.append(PARA2nan); 
         ACC.append(ACCnan)
         continue
 #    trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
@@ -290,9 +301,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
 
         
     # ======== OBS stats ===========
-    OBS = (VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI)
+    OBS = (VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,PET,LAI)
     OBS_temporal_mean = [np.nanmean(itm) for itm in OBS]
     OBS_temporal_std = [np.nanstd(itm) for itm in OBS]
+    obsn = [sum(~np.isnan(itm)) for itm in OBS[:3]]
 
     
     
@@ -320,9 +332,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     #acc_summary = [np.nanmax(r2_vod),np.nanmax(r2_et),np.nanmax(r2_sm),np.nanpercentile(Geweke,25)]
     #print(acc_summary)
     
-    OBS_mean.append(OBS_temporal_mean); OBS_std.append(OBS_temporal_std)
+    OBS_mean.append(OBS_temporal_mean); OBS_std.append(OBS_temporal_std); OBS_N.append(obsn)
     TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
     PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
+    PARA2_mean.append(halftrace_mean); PARA2_std.append(halftrace_mean)
     ACC.append(acc_summary)
     toc = time.perf_counter()
     print(f"Site time: {toc-tic:0.4f} seconds")
@@ -333,10 +346,14 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
 nn = np.array(ACC).shape[0];print(nn)
 OBS_mean = np.reshape(np.array(OBS_mean),[nn,-1])
 OBS_std = np.reshape(np.array(OBS_std),[nn,-1])
+OBS_N = np.reshape(np.array(OBS_N),[nn,-1])
+
 TS_mean = np.reshape(np.array(TS_mean),[nn,-1])
 TS_std = np.reshape(np.array(TS_std),[nn,-1])
 PARA_mean = np.reshape(np.array(PARA_mean),[nn,-1])
 PARA_std = np.reshape(np.array(PARA_std),[nn,-1])
+PARA2_mean = np.reshape(np.array(PARA2_mean),[nn,-1])
+PARA2_std = np.reshape(np.array(PARA2_std),[nn,-1])
 #ACC = np.reshape(np.array(ACC),[nn,-1])
 ACC = np.array(ACC)
 #print(PARA_mean)
@@ -345,13 +362,13 @@ ACC = np.array(ACC)
 
 obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
 with open(obsname, 'wb') as f: 
-    pickle.dump((OBS_mean,OBS_std), f)
+    pickle.dump((OBS_mean,OBS_std,OBS_N), f)
 # OBS_mean, OBS_std = pickle.load(f)
 # VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI,ISO = OBS_mean[sub_fid,:] # (OBS_std[sub_fid,:]) temporal mean (std) of observation
     
 estname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
 with open(estname, 'wb') as f: 
-    pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,ACC), f)
+    pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC), f)
 #TS_mean,TS_std,PARA_mean,PARA_std = pickle.load(f)
 # VOD,ET,PSIL,S1 = TS_mean[sub_fid,:] # (TS_std[sub_fid,:]) temporal mean (std) of ensembel mean
 # g1,lpx,psi50X,C,bexp,bc,sigma_et,sigma_vod,loglik,a,b,c = PARA_mean[sub_fid,:] # (PARA_std[sub_fid,:]) ensemble mean (std)
