@@ -38,8 +38,16 @@ for arrayid in range(933):
     subrange = np.arange(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo)))
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
-            TS_mean,TS_std,PARA_mean,PARA_std,ACC = pickle.load(f)
+            
+            # TS_mean,TS_std,PARA_mean,PARA_std,ACC = pickle.load(f)
+            tmp = pickle.load(f)
+            # TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = pickle.load(f)
         # print(PARA_mean.shape)
+        if len(tmp)==5:
+            TS_mean,TS_std,PARA_mean,PARA_std,ACC = tmp
+        else:
+            TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = tmp
+            
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
             Collection_PARA[subrange,:] = PARA_mean
