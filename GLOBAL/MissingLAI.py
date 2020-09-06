@@ -22,4 +22,4 @@ for i in range(len(SiteInfo)):
 
 #%%
 missingsites = pd.DataFrame(np.array(missingsites),columns=list(SiteInfo))
-missingsites.to_csv('MissingSites.csv')
+# missingsites.to_csv('MissingSites.csv')
