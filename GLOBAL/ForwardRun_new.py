@@ -27,7 +27,7 @@ tic = time.perf_counter()
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,20,100)
+warmup, nsample,thinning = (0.8,10,100)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 # arrayid = 44#4672

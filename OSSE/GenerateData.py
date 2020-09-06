@@ -11,7 +11,7 @@ import os
 import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
-import sys; sys.path.append("../Global/")
+import sys; sys.path.append("../GLOBAL/")
 from newfun import readCLM # newfun_full
 from newfun import fitVOD_RMSE,calVOD,dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
@@ -19,7 +19,9 @@ from newfun import GetTrace
 from Utilities import nanOLS,nancorr,MovAvg,IsOutlier
 import time
 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 
 versionpath = parentpath + 'Global_0817/'
 
@@ -33,7 +35,8 @@ SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
 # SiteInfo = pd.read_csv('../Global/SiteInfo_globe_full.csv')
 #%%
 
-for fid in range(SiteInfo):
+for fid in range(arrayid*10,(arrayid+1)*10):
+    print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)
     Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
