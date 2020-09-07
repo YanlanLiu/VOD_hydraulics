@@ -38,20 +38,25 @@ MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
+Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
+# Collection_S = np.zeros([len(SiteInfo),14])+np.nan
+
+Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
+Collection_N = np.zeros([len(SiteInfo),3])+np.nan
 
 for arrayid in range(933):
     if np.mod(arrayid,100)==0:print(arrayid)
-    fname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     subrange = np.arange(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo)))
+    fname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
-            TS_mean,TS_std,PARA_mean,PARA_std,ACC = pickle.load(f)
-        # print(PARA_mean.shape)
+            TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = pickle.load(f)
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
-
+            Collection_PARA[subrange,:] = PARA_mean
+            
 mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
-def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,title=''):
+def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,title='',cbartitle=''):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
     plt.figure(figsize=(13.2,5))
@@ -61,7 +66,7 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,title=''):
     lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
     cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
     cbar = m.colorbar(cs)
-    cbar.set_label(varname,rotation=360,labelpad=15)
+    cbar.set_label(cbartitle,rotation=360,labelpad=15)
     plt.title(title)
     plt.show()
     return 0
@@ -77,7 +82,7 @@ plotmap(df_para,'r2_vod')
 #%%
 def getr2(prefix):
 
-    for arrayid in range(66):
+    for arrayid in range(88):
         fname = prefix+str(arrayid).zfill(3)+'.pkl'
         with open(fname,'rb') as f:
             tmp  = pickle.load(f)
@@ -86,24 +91,22 @@ def getr2(prefix):
         else:
             ACC = np.concatenate([ACC,tmp],axis=0)
     
-    df_pft = pd.DataFrame(ACC[:,:3],columns=['r2_vod','r2_et','r2_sm'])
+    df_pft = pd.DataFrame(ACC[:,:6],columns=['r2_vod','r2_et','r2_sm','rmse_vod','rmse_et','rmse_sm'])
     df_pft['row'] = df_para['row']; df_pft['col'] = df_para['col']
     return df_pft
 
 df_pft = getr2(versionpath+'STATS_PFT/PFT_')
-df_c4 = getr2(versionpath+'STATS_C4/Cluster_')
-df_c12 =  getr2(versionpath+'STATS_C12/Cluster_')
+df_c4 = getr2(versionpath+'STATS_C6/Cluster_')
 df_full = df_para[['r2_vod','r2_et','r2_sm','row','col']]
 
 
 degrad_pft = df_pft-df_full; degrad_pft['row']=df_para['row']; degrad_pft['col'] = df_para['col']
-degrad_c4 = df_c12-df_full; degrad_c4['row']=df_para['row']; degrad_c4['col'] = df_para['col']
-degrad_c12 = df_c12-df_full; degrad_c12['row']=df_para['row']; degrad_c12['col'] = df_para['col']
+degrad_c4 = df_c4-df_full; degrad_c4['row']=df_para['row']; degrad_c4['col'] = df_para['col']
 
 delta_c4 = df_c4-df_pft; delta_c4['row']=df_para['row']; delta_c4['col'] = df_para['col']
-delta_c12 = df_c12-df_pft; delta_c12['row']=df_para['row']; delta_c12['col'] = df_para['col']
 
-# plotmap(degrad_pft,'r2_vod',cmap='Reds_r',vmin=-0.25,vmax=0)
+plotmap(degrad_pft,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
+plotmap(degrad_pft,'r2_sm',cmap='Reds_r',vmin=-0.5,vmax=0)
 
 # #%%
 # plt.plot(np.sort(delta_c12['r2_vod']),np.arange(len(delta_c4))/len(delta_c4))
@@ -114,19 +117,50 @@ delta_c12 = df_c12-df_pft; delta_c12['row']=df_para['row']; delta_c12['col'] = d
 # print((delta_c12>0).sum()/len(delta_c12))
 
 #%%
-dd = 0.12; varname = 'r2_sm'
-# plotmap(degrad_pft,varname,cmap='Reds_r',vmin=-2*dd,vmax=0,title="R2(pft)-R2")
-# plotmap(delta_c12,varname,cmap='RdBu',vmin=-dd,vmax=dd,title="R2(clusters_12)-R2(pft)")
+# plotmap(degrad_c4,'rmse_vod',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE, VOD, dry")
+# plotmap(degrad_c4,'rmse_et',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), ET, dry")
+# plotmap(degrad_c4,'rmse_sm',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), SM, dry")
 
-count,bins = np.histogram(delta_c4[varname],bins=[-1,-0.05,0,0.05,1])
-cc = [sns.color_palette("RdBu",5)[i] for i in [0,1,3,4]]
+plotmap(degrad_c4,'r2_vod',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(hft)-R2, VOD")
+plotmap(degrad_c4,'r2_et',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(hft)-R2, ET")
+plotmap(degrad_c4,'r2_sm',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(hft)-R2, SM")
+
+plotmap(degrad_pft,'r2_vod',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, VOD")
+plotmap(degrad_pft,'r2_et',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, ET")
+plotmap(degrad_pft,'r2_sm',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, SM")
+
+#%%
+# # plotmap(degrad_pft,varname,cmap='Reds_r',vmin=-2*dd,vmax=0,title="R2(pft)-R2")
+# plotmap(delta_c4,varname,cmap='RdBu',vmin=-dd,vmax=dd,title="R2(clusters)-R2(pft)")
+
+plotmap(delta_c4,'rmse_vod',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE(pft), VOD")
+plotmap(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), ET")
+plotmap(delta_c4,'rmse_sm',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), SM")
+#%%
+plotmap(delta_c4,'r2_vod',cmap='RdBu',vmin=-.05,vmax=.05,title="R2(hft)-R2(pft), VOD")
+plotmap(delta_c4,'r2_et',cmap='RdBu',vmin=-.05,vmax=.05,title="R2(hft)-R2(pft), ET")
+plotmap(delta_c4,'r2_sm',cmap='RdBu',vmin=-.15,vmax=.15,title="R2(hft)-R2(pft), SM")
+
+#%%
+a  = degrad_c4['r2_vod'].dropna().values
+plt.plot(np.sort(a),1-np.arange(len(a))/len(a))
+plt.plot(np.sort(a),)
+# a  = degrad_pft['r2_vod'].dropna().values
+# plt.plot(np.sort(a),1-np.arange(len(a))/len(a))
+
+
+#%%
+dd = 0.15; varname = 'rmse_vod'
+
+count,bins = np.histogram(delta_c4[varname],bins=[-3,-0.5,0,0.5,3])
+cc = [sns.color_palette("RdBu_r",5)[i] for i in [0,1,3,4]]
 plt.figure(figsize=(6,3))
 for i in range(4):
     plt.bar(i,count[i]/len(delta_c4),color=cc[i])
-plt.xticks(np.arange(4),['<-0.05','-0.05~0','0~0.05','>0.05'])
-plt.xlabel(r'$\Delta R^2$')
+plt.xticks(np.arange(4),['<-0.5','-0.5~0','0~0.5','>0.5'])
+plt.xlabel(r'$\Delta RMSE$')
 plt.ylabel('fraction')
-plt.ylim([0,0.5])
+# plt.ylim([0,0.5])
 
 
 

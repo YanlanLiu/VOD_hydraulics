@@ -54,7 +54,7 @@ def calR2(yhat,y):
 # OBS_mean = []; OBS_std = []; OBSnan = [np.nan for i in range(8)]
 # TS_mean = []; TS_std = []; TSnan = [np.nan for i in range(4)]
 # PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
-ACC = []; ACCnan = [np.nan for i in range(4)]
+ACC = []; ACCnan = [np.nan for i in range(12)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):#range(953,954):#
     print(fid)
