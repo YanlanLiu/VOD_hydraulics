@@ -20,12 +20,14 @@ from newfun import OB,CONST,CLAPP,ca
 from Utilities import MovAvg,IsOutlier
 import pickle
 
-# parentpath = '/scratch/users/yanlan/'
-# fid = int(os.environ['SLURM_ARRAY_TASK_ID'])
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-fid = 0
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])
+samplenum = (30,2000)
 
-samplenum = (15,2000)
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 0
+#samplenum = (3,20)
+
 chainid = 0
 
 versionpath = parentpath + 'OSSE/'; hyperpara = (0.1,0.05,20)
@@ -35,8 +37,11 @@ datapath = versionpath+'FakeData/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
-SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
-# SiteInfo = pd.read_csv('../Global/SiteInfo_globe_full.csv')
+#SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
+SiteInfo = pd.read_csv('../GLOBAL/SiteInfo_globe_full.csv')
+fidlist = np.arange(1000,len(SiteInfo),1000)
+fid = fidlist[arrayid]
+
 #%%
 sitename = str(SiteInfo['row'][fid])+'_'+str(SiteInfo['col'][fid])
 PREFIX = outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)

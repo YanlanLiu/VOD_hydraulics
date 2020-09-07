@@ -31,11 +31,12 @@ datapath = parentpath+'OSSE/FakeData/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
-SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
-# SiteInfo = pd.read_csv('../Global/SiteInfo_globe_full.csv')
+#SiteInfo = pd.read_csv('SiteInfo_reps_53.csv')
+SiteInfo = pd.read_csv('../GLOBAL/SiteInfo_globe_full.csv')
 #%%
-
-for fid in range(arrayid*10,(arrayid+1)*10):
+fidlist = np.arange(1000,len(SiteInfo),1000)
+for fidi in range(arrayid,arrayid+1):
+    fid = fidlist[fidi]
     print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)

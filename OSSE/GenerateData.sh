@@ -3,10 +3,10 @@
 #SBATCH --job-name=gen
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
-#SBATCH --array=0-5
+#SBATCH --array=0-90
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
-#SBATCH --time=1:00:00
+#SBATCH --time=0:20:00
 #SBATCH --mem-per-cpu=1000
 
 ######################

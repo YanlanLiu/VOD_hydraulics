@@ -335,7 +335,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     OBS_mean.append(OBS_temporal_mean); OBS_std.append(OBS_temporal_std); OBS_N.append(obsn)
     TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
     PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
-    PARA2_mean.append(halftrace_mean); PARA2_std.append(halftrace_mean)
+    PARA2_mean.append(halftrace_mean); PARA2_std.append(halftrace_std)
     ACC.append(acc_summary)
     toc = time.perf_counter()
     print(f"Site time: {toc-tic:0.4f} seconds")
