@@ -202,44 +202,45 @@ for fidi in range(arrayid,arrayid+1):
     trace = GetTrace(PREFIX,0)
     trace = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index']) 
     theta = trace[int(len(trace)*0.8):].reset_index().drop(columns=['index'])[varnames].mean().values
-    
+    with open(datapath+'Para_'+sitename+'.pkl', 'wb') as f: pickle.dump(theta, f)
+
     #%%
-    PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
+    # PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
         
-    dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
-    VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True)
-    if popt[0] == 0: 
-        popt[0] = 0.01
-        VOD_hat = calVOD(popt,dPSIL,dLAI)
+    # dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
+    # VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True)
+    # if popt[0] == 0: 
+    #     popt[0] = 0.01
+    #     VOD_hat = calVOD(popt,dPSIL,dLAI)
     
-    ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # weekly ET, mm/day
-    S1_hat = hour2day(S1_hat,idx)[~discard_vod][::2]
+    # ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # weekly ET, mm/day
+    # S1_hat = hour2day(S1_hat,idx)[~discard_vod][::2]
     
-    valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
-    bins = np.arange(0,1.02,0.01)
-    counts, bin_edges = np.histogram(SOILM_valid, bins=bins, normed=True)
-    cdf1 = np.cumsum(counts)/sum(counts)
-    counts, bin_edges = np.histogram(S1_hat, bins=bins, normed=True)
-    cdf2 = np.cumsum(counts)/sum(counts)
-    S1_hat = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in S1_hat])
-    
-    
-    VOD_hat[np.isnan(VOD_ma)] = np.nan
-    ET_hat[np.isnan(ET)] = np.nan
-    S1_hat[np.isnan(SOILM)] = np.nan
+    # valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
+    # bins = np.arange(0,1.02,0.01)
+    # counts, bin_edges = np.histogram(SOILM_valid, bins=bins, normed=True)
+    # cdf1 = np.cumsum(counts)/sum(counts)
+    # counts, bin_edges = np.histogram(S1_hat, bins=bins, normed=True)
+    # cdf2 = np.cumsum(counts)/sum(counts)
+    # S1_hat = np.array([bin_edges[np.abs(cdf1-cdf2[int(itm*100)]).argmin()] for itm in S1_hat])
     
     
-    s_vod = 0.04; s_et = 0.5; s_sm = 0.07
-    VOD_fake = VOD_hat+np.random.normal(0,s_vod,VOD.shape)
-    ET_fake = ET_hat+np.random.normal(0,s_et,ET.shape)
-    SOILM_fake = S1_hat+np.random.normal(0,s_sm,SOILM.shape)
-    SOILM_fake[IsOutlier(SOILM_fake)] = np.nan
-    SOILM_fake[SOILM_fake>1] = 1
-    SOILM_fake[SOILM_fake<0] = 0
+    # VOD_hat[np.isnan(VOD_ma)] = np.nan
+    # ET_hat[np.isnan(ET)] = np.nan
+    # S1_hat[np.isnan(SOILM)] = np.nan
     
-    # plt.plot(SOILM);plt.plot(SOILM_fake)
-    # plt.plot(VOD_ma);plt.plot(VOD_fake)
-    # plt.plot(ET);plt.plot(ET_fake)
     
-    with open(datapath+'Gen_'+sitename+'_.pkl', 'wb') as f: 
-        pickle.dump((VOD_fake,ET_fake,SOILM_fake), f)
+    # s_vod = 0.04; s_et = 0.5; s_sm = 0.07
+    # VOD_fake = VOD_hat+np.random.normal(0,s_vod,VOD.shape)
+    # ET_fake = ET_hat+np.random.normal(0,s_et,ET.shape)
+    # SOILM_fake = S1_hat+np.random.normal(0,s_sm,SOILM.shape)
+    # SOILM_fake[IsOutlier(SOILM_fake)] = np.nan
+    # SOILM_fake[SOILM_fake>1] = 1
+    # SOILM_fake[SOILM_fake<0] = 0
+    
+    # # plt.plot(SOILM);plt.plot(SOILM_fake)
+    # # plt.plot(VOD_ma);plt.plot(VOD_fake)
+    # # plt.plot(ET);plt.plot(ET_fake)
+
+    # # with open(datapath+'Gen_'+sitename+'_.pkl', 'wb') as f: 
+    # #     pickle.dump((VOD_fake,ET_fake,SOILM_fake), f)

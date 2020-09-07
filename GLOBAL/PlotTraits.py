@@ -29,7 +29,7 @@ varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
 Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
-# Collection_S = np.zeros([len(SiteInfo),14])+np.nan
+Collection_STD = np.zeros([len(SiteInfo),11])+np.nan
 
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
 Collection_N = np.zeros([len(SiteInfo),3])+np.nan
@@ -44,6 +44,7 @@ for arrayid in range(933):
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
             Collection_PARA[subrange,:] = PARA_mean
+            Collection_STD[subrange,:] = PARA2_std*2
     fname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
@@ -79,9 +80,9 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle=''):
 #%%
 df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N],axis=1),columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm'])
 df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']
-plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
-# df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.40)] = np.nan
 # plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
+df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.40)] = np.nan
+plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
 plotmap(df_acc,'r2_et',cbartitle=r'$R^2_{ET}$')
 plotmap(df_acc,'r2_vod',cbartitle=r'$R^2_{VOD}$')
 
@@ -93,6 +94,11 @@ sns.kdeplot(df_acc['r2_sm'])
 plt.xlabel('R2')
 plt.ylabel('pdf')
 #%%
+df_std = pd.DataFrame(Collection_STD,columns=varnames)
+df_std['row'] = SiteInfo['row'];df_std['col'] = SiteInfo['col']; df_std['IGBP'] = SiteInfo['IGBP']
+plotmap(df_std,'psi50X',vmin=0,vmax=5,cmap='RdYlBu_r',cbartitle=r'$\psi_{50,X}$')
+plotmap(df_std,'g1',vmin=0,vmax=2,cmap='RdYlBu_r',cbartitle=r'$g_1$')
+
 
 
 #%%
