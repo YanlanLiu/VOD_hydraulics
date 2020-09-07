@@ -36,6 +36,8 @@ SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
 Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
+# Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
+
 for arrayid in range(933):
     if np.mod(arrayid,100)==0:print(arrayid)
     subrange = np.arange(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo)))
@@ -69,10 +71,10 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     plt.show()
     return 0
 #%%
-df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
-# df_para = pd.DataFrame(np.concatenate([Collection_PARA,Collection_OBS],axis=1),
-#                        columns=varnames+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI'])
-# df_para['DI'] = df_para['PET']/(df_para['P']*24) # mm/day
+# df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
+df_para = pd.DataFrame(np.concatenate([Collection_PARA,Collection_OBS],axis=1),
+                        columns=varnames+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI'])
+df_para['DI'] = df_para['PET']/(df_para['P']*24) # mm/day
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
 df_para['Root depth'] = SiteInfo['Root depth']; df_para['Soil texture'] = SiteInfo['Soil texture']
 df_para['Vcmax25'] = SiteInfo['Vcmax25']
@@ -80,7 +82,7 @@ df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 # plotmap(df_para,'psi50X',vmin=-7,vmax=0,cmap='RdYlBu')
 df_para = df_para.dropna()
-# plotmap(df_para,'DI',vmin=0,vmax=5)
+plotmap(df_para,'DI',vmin=0,vmax=5)
 
 Y = np.array(df_para[varnames[:5]])
 # Y[:,2] = -Y[:,2] # P50X
@@ -171,8 +173,9 @@ plt.ylabel('Normalized value')
 #%%
 df_km =  df_para[['row','col']]
 df_km['clusters'] = klabel_s
-cc = [sns.color_palette("Paired")[i] for i in [7,6,3,2,9,8]] # [0,1,2,3,6,11]
-cc = [sns.color_palette("Paired")[i] for i in [6,7,2,3,8,9]] # [0,1,2,3,6,11]6
+# cc = [sns.color_palette("Paired")[i] for i in [7,6,3,2,9,8]] # [0,1,2,3,6,11]
+cc = [sns.color_palette("Paired")[i] for i in [6,7,2,3,8,9]] # [0,1,2,3,6,11]
+
 cmap0 = colors.ListedColormap(cc)
 # plotmap(df_km,'clusters',vmin=0,vmax=n_clusters,cmap=cmap0)
 heatmap1_data = pd.pivot_table(df_km, values='clusters', index='row', columns='col')
@@ -189,8 +192,43 @@ cbar.ax.set_yticklabels(['C'+str(i) for i in range(n_clusters)])
 plt.show()
 
 #%% Plot distribution of DI and bexp within each cluster
+plt.figure(figsize=(10,5))
+tmp = df_para[df_para<7]
+sns.boxplot(x='clusters_6',y='DI',data=tmp,color='b',width=0.4,fliersize=0)
+plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+# plt.ylim([0,6.5])
+plt.xlabel('Cluster')
+# plt.ylabel('Dryness index')
 
-#%% PCA
+
+plt.figure(figsize=(10,5))
+# tmp = df_para[df_para<7]
+sns.boxplot(x='clusters_6',y='bc',data=df_para,color='b',width=0.4,fliersize=0)
+# sns.violinplot(x='clusters_6',y='IGBP',data=df_para,color='b',width=0.4,fliersize=0)
+
+plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+# plt.ylim([0,6.5])
+plt.xlabel('Cluster')
+# plt.ylabel('Dryness index')
+
+#%%
+# plt.plot(df_para['psi50X'],df_para['g1'],'ok')
+# from Utilities import nancorr
+# for v in list(df_para):
+#     r = nancorr(df_para['g1'].values,df_para[v].values)
+#     print(v+f", r = {r:.2f}")
+
+A = df_para[varnames[:-4]+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI','DI']]
+vnames = list(A)
+A = (A-np.nanmean(A,axis=0))/np.nanstd(A,axis=0); A = A.values
+SS = np.dot(A.T,A)/A.shape[0]
+#%%
+plt.figure(figsize=(10,10))
+plt.imshow(SS,cmap='RdBu_r');plt.colorbar();plt.clim(-1,1)
+plt.xticks(np.arange(len(vnames)),vnames,rotation=90)
+plt.yticks(np.arange(len(vnames)),vnames)
+plt.title('Correlation')
+# %% PCA
 S = np.dot(Yc.T,Yc)
 w, v = linalg.eig(S)
 sw = w[np.argsort(w)[::-1]]
