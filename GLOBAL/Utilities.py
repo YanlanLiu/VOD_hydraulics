@@ -87,6 +87,12 @@ def calR2(y,yhat):
     yhat = yhat[mask]
     return 1-np.sum((y-yhat)**2)/np.sum((y-np.mean(y))**2)
 
+def calRMSE(y,yhat):
+    mask = ~np.isnan(y+yhat)
+    y = y[mask]
+    yhat = yhat[mask]
+    return np.sqrt(np.mean((y-yhat)**2))/np.mean(y)
+
 def MovAvg(a,windowsize):
     mva = np.zeros(a.shape)+np.nan
     hw = int(windowsize/2)

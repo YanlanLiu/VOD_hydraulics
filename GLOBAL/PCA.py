@@ -35,26 +35,25 @@ varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
 Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
-
+Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
 for arrayid in range(933):
     if np.mod(arrayid,100)==0:print(arrayid)
-    fname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     subrange = np.arange(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo)))
+    fname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
-            
-            # TS_mean,TS_std,PARA_mean,PARA_std,ACC = pickle.load(f)
-            tmp = pickle.load(f)
-            # TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = pickle.load(f)
-        # print(PARA_mean.shape)
-        if len(tmp)==5:
-            TS_mean,TS_std,PARA_mean,PARA_std,ACC = tmp
-        else:
-            TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = tmp
-            
+            TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = pickle.load(f)
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
             Collection_PARA[subrange,:] = PARA_mean
+    
+    fname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
+    if os.path.isfile(fname):
+        with open(fname,'rb') as f:
+            OBS_mean,OBS_std,OBS_N = pickle.load(f)            
+        if OBS_mean.shape[1]>0:
+            Collection_OBS[subrange,:] = OBS_mean
+            
 mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
 def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
@@ -71,15 +70,21 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     return 0
 #%%
 df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
+# df_para = pd.DataFrame(np.concatenate([Collection_PARA,Collection_OBS],axis=1),
+#                        columns=varnames+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI'])
+# df_para['DI'] = df_para['PET']/(df_para['P']*24) # mm/day
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
 df_para['Root depth'] = SiteInfo['Root depth']; df_para['Soil texture'] = SiteInfo['Soil texture']
 df_para['Vcmax25'] = SiteInfo['Vcmax25']
-plotmap(df_para,'psi50X',vmin=0,vmax=7,cmap='RdYlBu_r')
+df_para['psi50X'] = -df_para['psi50X']
+df_para['lpx'] = df_para['lpx']*df_para['psi50X']
+# plotmap(df_para,'psi50X',vmin=-7,vmax=0,cmap='RdYlBu')
 df_para = df_para.dropna()
+# plotmap(df_para,'DI',vmin=0,vmax=5)
 
 Y = np.array(df_para[varnames[:5]])
-Y[:,2] = -Y[:,2] # P50X
-Y[:,1] = Y[:,1]*Y[:,2] # P50S
+# Y[:,2] = -Y[:,2] # P50X
+# Y[:,1] = Y[:,1]*Y[:,2] # P50S
 Ymean = np.nanmean(Y,axis=0)
 Ystd = np.nanstd(Y,axis=0)
 Yc = (Y-Ymean)/Ystd
@@ -128,7 +133,7 @@ def fit_kmeans(Yc,n_clusters):
 # plt.plot([12,12],[0.2,1],'--k',label='# of PFT')
 # plt.legend(bbox_to_anchor=[1.05,1.05])
 # plt.xlabel('# of clusters')
-# print(Ve_pft/Vall,Vw_pft/Vb_pft)
+# # print(Ve_pft/Vall,Vw_pft/Vb_pft)
 
 # plt.figure()
 # plt.plot(np.arange(3,20),SBIC)
@@ -143,10 +148,13 @@ print(Ve/Vall,Vw/Vb,BIC)
 sorted_idx = list(np.argsort(kcenter[:,2]))
 kcenter_s = kcenter[sorted_idx,:]
 klabel_s = np.array([sorted_idx.index(i) for i in klabel])
-
-
+df_para['clusters_6'] = klabel_s
+# df_para.to_csv('SiteInfo_clusters.csv')
 #%% 
-cc = [sns.color_palette("Paired")[i] for i in [3,0,1,9,8]]
+cc = [sns.color_palette("Paired")[i] for i in [3,0,1,11,4]]
+cc[0] = sns.color_palette("BrBG_r", 5)[0]
+cc[4] = sns.color_palette("Set2")[6]
+
 dd = 0.15
 vnames = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$']
 plt.figure(figsize=(10,5))
@@ -163,7 +171,8 @@ plt.ylabel('Normalized value')
 #%%
 df_km =  df_para[['row','col']]
 df_km['clusters'] = klabel_s
-cc = [sns.color_palette("Paired")[i] for i in [1,0,3,2,11,6]] # [0,1,2,3,6,11]
+cc = [sns.color_palette("Paired")[i] for i in [7,6,3,2,9,8]] # [0,1,2,3,6,11]
+cc = [sns.color_palette("Paired")[i] for i in [6,7,2,3,8,9]] # [0,1,2,3,6,11]6
 cmap0 = colors.ListedColormap(cc)
 # plotmap(df_km,'clusters',vmin=0,vmax=n_clusters,cmap=cmap0)
 heatmap1_data = pd.pivot_table(df_km, values='clusters', index='row', columns='col')
@@ -179,6 +188,7 @@ cbar.ax.set_yticklabels(['C'+str(i) for i in range(n_clusters)])
 # cbar.set_label(varname,rotation=360,labelpad=15)
 plt.show()
 
+#%% Plot distribution of DI and bexp within each cluster
 
 #%% PCA
 S = np.dot(Yc.T,Yc)

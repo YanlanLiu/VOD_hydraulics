@@ -17,7 +17,7 @@ from newfun import readCLM # newfun_full
 from newfun import fitVOD_RMSE,calVOD, dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
 from newfun import GetTrace
-from Utilities import nanOLS,nancorr,MovAvg
+from Utilities import nanOLS,nancorr,MovAvg,calRMSE
 import time
 
 tic = time.perf_counter()
@@ -25,14 +25,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-nsites_per_id = 1000
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+# nsites_per_id = 1000
 # warmup, nsample,thinning = (0.8,50,40)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-#arrayid = 10#4672
-#nsites_per_id = 2
-# warmup, nsample,thinning = (0.8,2,40)
+arrayid = 10#4672
+nsites_per_id = 1
+warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -244,26 +244,19 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
  
 
-    er2_vod = nancorr(TS[0],VOD_ma)**2
-    er2_et = nancorr(TS[1],ET)**2
-    er2_sm = nancorr(TS[3],SOILM)**2
+    er2 = [nancorr(TS[0],VOD_ma)**2, nancorr(TS[1],ET)**2, nancorr(TS[3],SOILM)**2] # VOD, ET, SM
+    ermse = [calRMSE(VOD_ma,TS[0]), calRMSE(ET,TS[1]), calRMSE(SOILM,TS[3])]
     
     dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
     wVPD = hour2week(VPD)[~discard_et]
-    hSOILM = np.zeros(VPD.shape)+np.nan
-    hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
-    wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
-
-    dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
+    dry = (dVPD>np.nanpercentile(dVPD,75))
     ddry = np.repeat(dry,2) 
-    wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
+    wdry = (wVPD>np.nanpercentile(wVPD,75))
+    
+    er2_dry = [nancorr(TS[0][ddry],VOD_ma[ddry])**2, nancorr(TS[1][wdry],ET[wdry])**2, nancorr(TS[3][dry],SOILM[dry])**2]
+    ermse_dry = [calRMSE(VOD_ma[ddry],TS[0][ddry]), calRMSE(ET[wdry],TS[1][wdry]), calRMSE(SOILM[dry],TS[3][dry])]
 
-
-
-
-
- 
-    acc_summary = [er2_vod,er2_et,er2_sm,calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
+    acc_summary = er2+ermse+er2_dry+ermse_dry
 
     ACC.append(acc_summary)
 ACC = np.array(ACC)
