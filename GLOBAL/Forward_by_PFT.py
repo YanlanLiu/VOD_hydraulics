@@ -14,7 +14,7 @@ import pandas as pd
 import warnings; warnings.simplefilter("ignore")
 import sys; sys.path.append("../Utilities/")
 from newfun import readCLM # newfun_full
-from newfun import fitVOD_RMSE,dt, hour2day, hour2week
+from newfun import fitVOD_RMSE,calVOD, dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
 from newfun import GetTrace
 from Utilities import nanOLS,nancorr,MovAvg
@@ -227,7 +227,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         
     ET_hat = hour2week(ET_hat,UNIT=24)[~discard_et] # mm/hr -> mm/day
     dPSIL = hour2day(PSIL_hat,idx)[~discard_vod]
-    VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True) 
+    #VOD_hat,popt = fitVOD_RMSE(dPSIL,dLAI,VOD_ma,return_popt=True)
+    popt = SiteInfo[['a','b','c']].iloc[fid].values
+    print(popt)
+    VOD_hat = calVOD(popt,dPSIL,dLAI)
     dS1 = hour2day(S1_hat,idx)[~discard_vod][::2]
 
     if np.isfinite(np.nansum(dS1)) and np.nansum(dS1)>0:
@@ -245,6 +248,21 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     er2_et = nancorr(TS[1],ET)**2
     er2_sm = nancorr(TS[3],SOILM)**2
     
+    dVPD = hour2day(VPD,idx)[~discard_vod][1::2]
+    wVPD = hour2week(VPD)[~discard_et]
+    hSOILM = np.zeros(VPD.shape)+np.nan
+    hSOILM[~np.repeat(discard_vod,4)] = np.repeat(SOILM,8)
+    wSOILM = hour2week(hSOILM,UNIT=1)[~discard_et]
+
+    dry = (SOILM<np.nanpercentile(SOILM,30)) & (dVPD>np.nanpercentile(dVPD,70))
+    ddry = np.repeat(dry,2) 
+    wdry = (wSOILM<np.nanpercentile(wSOILM,30)) & (wVPD>np.nanpercentile(wVPD,70))
+
+
+
+
+
+ 
     acc_summary = [er2_vod,er2_et,er2_sm,calR2(TS[0],VOD_ma),calR2(TS[1],ET),calR2(TS[3],SOILM)]
 
     ACC.append(acc_summary)
