@@ -48,9 +48,8 @@ inpath = parentpath+'Input_Global/'
 outpath = versionpath+'Output/'
 MODE = 'VOD_SM_ET'
 
-chains_per_site = 1
 fid = int(arrayid)
-chainid = 1#int(fid-fid*chains_per_site)
+chainid = 2
 
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 if fid>=len(SiteInfo):

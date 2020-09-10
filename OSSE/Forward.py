@@ -20,7 +20,7 @@ import os
 import numpy as np
 import pandas as pd
 import warnings; warnings.simplefilter("ignore")
-import sys; sys.path.append("../Utilities/")
+import sys; sys.path.append("../GLOBAL/")
 from newfun import readCLM # newfun_full
 from newfun import fitVOD_RMSE,dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
@@ -33,14 +33,14 @@ tic = time.perf_counter()
 # =========================== control pannel =============================
 
 parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-# nsites_per_id = 10
-# warmup, nsample,thinning = (0.8,10,100)
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+nsites_per_id = 5
+warmup, nsample,thinning = (0.8,100,50)
 
 # parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 4#4672
-nsites_per_id = 2
-warmup, nsample,thinning = (0.8,2,40)
+#arrayid = 4#4672
+#nsites_per_id = 2
+#warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'OSSE/'
 inpath = parentpath+ 'Input_Global/'
