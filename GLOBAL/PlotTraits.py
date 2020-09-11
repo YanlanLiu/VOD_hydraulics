@@ -14,6 +14,7 @@ from newfun import GetTrace, get_var_bounds
 import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.75)
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import os; os.environ['PROJ_LIB'] = '/Users/yanlan/opt/anaconda3/pkgs/proj4-5.2.0-h0a44026_1/share/proj/'
 from mpl_toolkits.basemap import Basemap
 from Utilities import LatLon
@@ -57,47 +58,92 @@ for arrayid in range(933):
 
 #%%
 mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
-def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle=''):
+def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.1):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
-    plt.figure(figsize=(13.2,5))
+    fig, ax = plt.subplots(figsize=(13.2,5))
     m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
     m.drawcoastlines()
     m.drawcountries()
     lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
     cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
     cbar = m.colorbar(cs)
-    cbar.set_label(cbartitle,rotation=360,labelpad=23)
-    plt.show()
+    # cbar.set_label(cbartitle,rotation=360,labelpad=23)
+    if inset:
+        c1 = color=sns.cubehelix_palette(rot=-.63)[-2]
+        axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=borderpad)
+        sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
+        
+        xlim = axins.get_xlim()
+        ylim = axins.get_ylim()
+        axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
+        axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
+        # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
+        axins.text(sum(xlim)/4,ylim[0]-(ylim[1]-ylim[0])/3,cbartitle,fontsize=18)
+    else:
+        # x,y = m(-165,-40)
+        # plt.text(x,y,cbartitle)
+        cbar.set_label(cbartitle,rotation=360,labelpad=-30,y=1.15)
     return 0
-    
-
-
-#%%from matplotlib.colors import LinearSegmentedColormap
-# cm = LinearSegmentedColormap.from_list('cm0', sns.color_palette("hls", 15), N=15)
-# plotmap(SiteInfo,'IGBP',vmin=0,vmax=15,cmap=cm)
 
 #%%
 df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N],axis=1),columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm'])
-df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']
-# plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
-df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.40)] = np.nan
-plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
-plotmap(df_acc,'r2_et',cbartitle=r'$R^2_{ET}$')
+df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']; df_acc['IGBP'] = SiteInfo['IGBP']
+# df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)] = df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)]*2
 plotmap(df_acc,'r2_vod',cbartitle=r'$R^2_{VOD}$')
+plotmap(df_acc,'r2_et',cbartitle=r'$R^2_{ET}$')
+plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
 
 
 #%%
-sns.kdeplot(df_acc['r2_vod'])
-sns.kdeplot(df_acc['r2_et'])
-sns.kdeplot(df_acc['r2_sm'])
-plt.xlabel('R2')
-plt.ylabel('pdf')
+plotmap(df_acc[(df_acc['IGBP']<11)],'r2_sm',cbartitle=r'$R^2_{SM}$')
+
+# plt.figure()
+# sns.kdeplot(df_acc['r2_vod'])
+# sns.kdeplot(df_acc['r2_et'])
+# sns.kdeplot(df_acc['r2_sm'])
+# plt.xlabel('R2')
+# plt.ylabel('pdf')
+
+
+#%% Plot map with an inset
+# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+# df = df_acc.copy(); varname = 'r2_vod'; cmap = mycmap; vmin=0; vmax=1; cbartitle='$R^2_{VOD}$'
+
+# fig, ax = plt.subplots(figsize=(13.2,5))
+
+# heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+# heatmap1_data[578] = np.nan
+
+# m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+# m.drawcoastlines()
+# m.drawcountries()
+# lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+# cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
+# cbar = m.colorbar(cs)
+# cbar.set_label(cbartitle,rotation=360,labelpad=23)
+
+
+# axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=2.2)
+# sns.kdeplot(df[varname],ax=axins,legend=False,color=sns.cubehelix_palette(rot=-.63)[-2])
+
+# # axins.set_xlabel('$R^2_{VOD}$',fontsize=16,labelpad=-2)
+# axins.tick_params(axis='x', labelsize=16)
+# xlim = axins.get_xlim()
+# ylim = axins.get_ylim()
+# axins.text(xlim[0]-(ylim[1]-ylim[0])/4,ylim[1],'pdf',fontsize=18)
+# axins.text(sum(xlim)/4,ylim[0]-(ylim[1]-ylim[0])/3,cbartitle,fontsize=18)
+
+
+# axins.set_ylabel('pdf',fontsize=16,labelpad=-1)
+
+
+
 #%%
 df_std = pd.DataFrame(Collection_STD,columns=varnames)
 df_std['row'] = SiteInfo['row'];df_std['col'] = SiteInfo['col']; df_std['IGBP'] = SiteInfo['IGBP']
-plotmap(df_std,'psi50X',vmin=0,vmax=5,cmap='RdYlBu_r',cbartitle=r'$\psi_{50,X}$')
-plotmap(df_std,'g1',vmin=0,vmax=2,cmap='RdYlBu_r',cbartitle=r'$g_1$')
+plotmap(df_std,'psi50X',vmin=0,vmax=5,cmap='RdYlBu_r',cbartitle=r'$\psi_{50,x}$',inset=False)
+plotmap(df_std,'g1',vmin=0,vmax=2,cmap='RdYlBu_r',cbartitle=r'$g_1$',inset=False)
 
 
 
@@ -107,20 +153,20 @@ df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP
 df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 #%%
-cmap0 = 'RdYlBu'
-plotmap(df_para,'psi50X',vmin=-6.5,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,X}$')
-plotmap(df_para,'g1',vmin=0,vmax=6.5,cmap=cmap0,cbartitle=r'$g_1$')
-plotmap(df_para,'C',vmin=0,vmax=26,cmap=cmap0,cbartitle=r'$C$')
-plotmap(df_para,'lpx',vmin=-3.4,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,S}$')
-plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'$g_{p,max}$')
-plotmap(df_para,'bc',vmin=0,vmax=.8,cmap=cmap0,cbartitle=r'$bc$')
-plotmap(df_para,'bexp',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'$bexp$')
+cmap0 = 'RdYlBu_r'
+plotmap(df_para,'psi50X',vmin=-6.5,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,x}$',inset=False)
+plotmap(df_para,'g1',vmin=0,vmax=6.5,cmap=cmap0,cbartitle=r'$g_1$',inset=False)
+plotmap(df_para,'C',vmin=0,vmax=26,cmap=cmap0,cbartitle=r'$C$',inset=False)
+plotmap(df_para,'lpx',vmin=-3.4,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,s}$',inset=False)
+plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'$g_{p,max}$',inset=False)
+plotmap(df_para,'bexp',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'soil$_b$',inset=False)
+plotmap(df_para,'bc',vmin=0,vmax=.8,cmap=cmap0,cbartitle=r'soil$_{bc}$',inset=False)
 
 #%%
 # plt.plot(df_para['psi50X'],df_para['g1'],'ok')
-from Utilities import nancorr
-for v in varnames+['a','b','c']:
-    print(v,nancorr(df_para['psi50X'].values,df_para[v].values))
+# from Utilities import nancorr
+# for v in varnames+['a','b','c']:
+#     print(v,nancorr(df_para['psi50X'].values,df_para[v].values))
 
 
 
@@ -209,31 +255,86 @@ fp='../CONUS/Trugman_map/CWM_P50_10Deg.nc'
 nc = netCDF4.Dataset(fp)
 lat = np.array(nc['lat'][:])
 lon = np.array(nc['lon'][:])
-p50_att = ndimage.zoom(np.array(nc['CWM_P50'][:]),(4,4),order=0)
-nplots  = ndimage.zoom(np.array(nc['nplots'][:]),(4,4),order=0)
-# plt.imshow(p50_att)
-
-lat1 = np.arange(min(lat)-0.5+0.25/2,max(lat)+0.5,0.25)
-lon1 = np.arange(min(lon)-0.5+0.25/2,max(lon)+0.5,0.25)
-lat_2d = np.tile(lat1,[len(lon1),1])
-lon_2d = np.transpose(np.tile(lon1,[len(lat1),1]))
-
+p50_att = np.array(nc['CWM_P50'][:])
+nplots  = np.array(nc['nplots'][:])
+lat_2d = np.tile(lat,[len(lon),1])
+lon_2d = np.transpose(np.tile(lon,[len(lat),1]))
 fia = pd.DataFrame({'Lat':np.reshape(lat_2d,[-1,]),'Lon':np.reshape(lon_2d,[-1,]),'P50':np.reshape(p50_att,[-1,]),'nplots':np.reshape(nplots,[-1,])})
+fia = fia.dropna().reset_index()
 
-# heatmap1_data = pd.pivot_table(fia, values='P50', index='Lat', columns='Lon')
-lat0,lon0 = LatLon(df_para['row'],df_para['col'])
-df_para['lat0'] = lat0; df_para['lon0'] = lon0
+lat0,lon0 = LatLon(df_para['row'].values,df_para['col'].values)
+psi50x = df_para['psi50X'].values
 
-new_df = pd.merge(df_para,fia,how='left',left_on=['lat0','lon0'],right_on=['Lat','Lon'])
-new_df['IGBPnames'] = IGBPnames
-# new_df['psi50X'] = new_df['psi50X']
-# new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') ]
-if new_df['psi50X'].mean()>0: new_df['psi50X'] = -new_df['psi50X']
+EST = []; igbp = []
+for i in range(len(fia)):
+    tmp = fia.iloc[i]
+    idx = np.where((lat0-tmp['Lat'])**2+(lon0-tmp['Lon'])**2<= 2*(0.5-0.125)**2)[0]
+    if len(idx)>0:
+        subp50 = psi50x[idx]
+        subigbp = list(IGBPnames[idx])
+        N = sum(~np.isnan(subp50)); mp50 = np.nanmean(subp50); stdp50 = np.nanstd(subp50)
+        igbp.append(max(subigbp, key=subigbp.count))
+        EST.append([mp50,N,stdp50])
+    else:
+        EST.append([np.nan,np.nan,np.nan])
+        igbp.append(np.nan)
+EST = np.array(EST)
+fia['P50_hat'] = EST[:,0]; fia['Nhat'] = EST[:,1]; fia['P50_std'] = EST[:,2];fia['IGBPnames'] = igbp   
+igbpfilter = [itm not in ['CRO','GRA'] for itm in fia['IGBPnames']]
+fia = fia[(fia['Nhat']>4) & igbpfilter]
+
+#%%
 plt.figure(figsize=(6,6))
-xlim = [-13.5,0.5]
+xlim = [-9.5,-0.4]
 # sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
-sns.scatterplot(x="P50", y="psi50X",s=new_df['nplots']*10,alpha=0.5, hue="IGBPnames",data=new_df)
-plt.legend(bbox_to_anchor=(1.75,1.05))
+nplots = fia['nplots']
+
+fia_s = fia[fia['IGBPnames']=='ENF']
+for igbp in ['EBF','DBF','MF']:
+    fia_s = pd.concat([fia_s,fia[fia['IGBPnames']==igbp]],axis=0)
+
+fia_s['Land cover'] = fia_s['IGBPnames']
+fia_s = fia_s.reset_index()
+sns.scatterplot(x="P50", y="P50_hat",s=np.log(nplots+1)*30,alpha=0.5, hue="Land cover",data=fia_s)
+# for i in range(len(fia_s)):
+#     plt.plot(fia_s['P50'].iloc[i]*np.array([1,1]),fia_s['P50_hat'].iloc[i]+fia_s['P50_std'].iloc[i]*np.array([-1,1]),'-',color='grey',alpha=0.5)
+plt.legend(bbox_to_anchor=(1.05,1.05),title='')
 plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
+plt.xlabel(r'FIA-based $\psi_{50}$ (MPa)')
+plt.ylabel(r'Estimated $\psi_{50}$ (MPa)')
+
+
+#%%
+# #%%
+# fp='../CONUS/Trugman_map/CWM_P50_10Deg.nc'
+# nc = netCDF4.Dataset(fp)
+# lat = np.array(nc['lat'][:])
+# lon = np.array(nc['lon'][:])
+# p50_att = ndimage.zoom(np.array(nc['CWM_P50'][:]),(4,4),order=0)
+# nplots  = ndimage.zoom(np.array(nc['nplots'][:]),(4,4),order=0)
+# # plt.imshow(p50_att)
+
+# lat1 = np.arange(min(lat)-0.5+0.25/2,max(lat)+0.5,0.25)
+# lon1 = np.arange(min(lon)-0.5+0.25/2,max(lon)+0.5,0.25)
+# lat_2d = np.tile(lat1,[len(lon1),1])
+# lon_2d = np.transpose(np.tile(lon1,[len(lat1),1]))
+
+# fia = pd.DataFrame({'Lat':np.reshape(lat_2d,[-1,]),'Lon':np.reshape(lon_2d,[-1,]),'P50':np.reshape(p50_att,[-1,]),'nplots':np.reshape(nplots,[-1,])})
+# fia = fia.dropna()
+# # heatmap1_data = pd.pivot_table(fia, values='P50', index='Lat', columns='Lon')
+# lat0,lon0 = LatLon(df_para['row'],df_para['col'])
+# df_para['lat0'] = lat0; df_para['lon0'] = lon0; df_para['IGBPnames'] = IGBPnames
+
+# new_df = pd.merge(fia,df_para,how='left',left_on=['Lat','Lon'],right_on=['lat0','lon0'])
+# # new_df['IGBPnames'] = IGBPnames
+# # new_df['psi50X'] = new_df['psi50X']
+# # new_df = new_df[(IGBPnames!='NA') & (IGBPnames!='Urban') &  (IGBPnames!='Grassland') &  (IGBPnames!='Cropland') ]
+# if new_df['psi50X'].mean()>0: new_df['psi50X'] = -new_df['psi50X']
+# plt.figure(figsize=(6,6))
+# xlim = [-13.5,0.5]
+# # sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
+# sns.scatterplot(x="P50", y="psi50X",s=new_df['nplots'],alpha=0.5, hue="IGBPnames",data=new_df)
+# plt.legend(bbox_to_anchor=(1.75,1.05))
+# plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 
 

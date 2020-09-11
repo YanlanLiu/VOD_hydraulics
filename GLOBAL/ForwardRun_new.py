@@ -19,20 +19,21 @@ from newfun import get_var_bounds,OB,CONST,CLAPP,ca
 from newfun import GetTrace
 from Utilities import nanOLS,nancorr,MovAvg,IsOutlier
 import time
+from scipy.stats import norm
 
 tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-parentpath = '/scratch/users/yanlan/'
-arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-nsites_per_id = 100
-warmup, nsample,thinning = (0.8,10,100)
-
-# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-# arrayid = 44#4672
+# parentpath = '/scratch/users/yanlan/'
+# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 # nsites_per_id = 100
-# warmup, nsample,thinning = (0.8,2,40)
+# warmup, nsample,thinning = (0.8,10,100)
+
+parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+arrayid = 44#4672
+nsites_per_id = 100
+warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -43,6 +44,10 @@ statspath = versionpath+'STATS/'
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
+idx_sigma_vod = varnames.index('sigma_vod')
+idx_sigma_et = varnames.index('sigma_et')
+idx_sigma_sm = varnames.index('sigma_sm')
+
 
 #%%
 
@@ -247,7 +252,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
 #    trace = trace[trace['step']>trace['step'].max()*warmup].reset_index().drop(columns=['index'])
           
     TS = [[] for i in range(4)]
-    PARA = [[] for i in range(2)]
+    PARA = [[] for i in range(3)]
     
     for count in range(nsample):
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
@@ -279,8 +284,14 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             dS1_matched = np.zeros(dS1.shape)+np.nan
             
 
+
+        loglik_vod = np.nanmean(norm.logpdf(VOD_ma,VOD_hat,theta[idx_sigma_vod]))
+        loglik_et = np.nanmean(norm.logpdf(ET,ET_hat,theta[idx_sigma_et]))
+        loglik_sm = np.nanmean(norm.logpdf(SOILM,dS1_matched,theta[idx_sigma_sm]))
+        
+        print([loglik_vod,loglik_et,loglik_sm])
         TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
-        PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta))]
+        PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta,[loglik_vod,loglik_et,loglik_sm]))]
         
         #toc = time.perf_counter()
         #print(f"Sample time: {toc-tic:0.4f} seconds")
@@ -289,10 +300,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]
         
        
-    forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
-    with open(forwardname, 'wb') as f: pickle.dump(TS, f)
-    forwardname = forwardpath+'PARA_'+MODE+'_'+sitename+'.pkl'
-    with open(forwardname, 'wb') as f: pickle.dump(PARA, f)
+    # forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
+    # with open(forwardname, 'wb') as f: pickle.dump(TS, f)
+    # forwardname = forwardpath+'PARA_'+MODE+'_'+sitename+'.pkl'
+    # with open(forwardname, 'wb') as f: pickle.dump(PARA, f)
     
     TS_temporal_mean = [np.nanmean(itm) for itm in TS] # temporal mean of ensemble mean
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
@@ -360,19 +371,19 @@ ACC = np.array(ACC)
 #print(OBS_mean.shape,TS_mean.shape,PARA_mean.shape,ACC.shape)
 #print(ACC)
 
-obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
-with open(obsname, 'wb') as f: 
-    pickle.dump((OBS_mean,OBS_std,OBS_N), f)
-# OBS_mean, OBS_std = pickle.load(f)
-# VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI,ISO = OBS_mean[sub_fid,:] # (OBS_std[sub_fid,:]) temporal mean (std) of observation
+# obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
+# with open(obsname, 'wb') as f: 
+#     pickle.dump((OBS_mean,OBS_std,OBS_N), f)
+# # OBS_mean, OBS_std = pickle.load(f)
+# # VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI,ISO = OBS_mean[sub_fid,:] # (OBS_std[sub_fid,:]) temporal mean (std) of observation
     
-estname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
-with open(estname, 'wb') as f: 
-    pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC), f)
-#TS_mean,TS_std,PARA_mean,PARA_std = pickle.load(f)
-# VOD,ET,PSIL,S1 = TS_mean[sub_fid,:] # (TS_std[sub_fid,:]) temporal mean (std) of ensembel mean
-# g1,lpx,psi50X,C,bexp,bc,sigma_et,sigma_vod,loglik,a,b,c = PARA_mean[sub_fid,:] # (PARA_std[sub_fid,:]) ensemble mean (std)
-# r2_vod,r2_et,r2_sm,Geweke = ACC[sub_fid,:]
+# estname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
+# with open(estname, 'wb') as f: 
+#     pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC), f)
+# #TS_mean,TS_std,PARA_mean,PARA_std = pickle.load(f)
+# # VOD,ET,PSIL,S1 = TS_mean[sub_fid,:] # (TS_std[sub_fid,:]) temporal mean (std) of ensembel mean
+# # g1,lpx,psi50X,C,bexp,bc,sigma_et,sigma_vod,loglik,a,b,c = PARA_mean[sub_fid,:] # (PARA_std[sub_fid,:]) ensemble mean (std)
+# # r2_vod,r2_et,r2_sm,Geweke = ACC[sub_fid,:]
 
 toc = time.perf_counter()    
 print(f"Running time (20 sites): {toc-tic:0.4f} seconds")
