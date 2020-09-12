@@ -300,10 +300,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]
         
        
-    # forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
-    # with open(forwardname, 'wb') as f: pickle.dump(TS, f)
-    # forwardname = forwardpath+'PARA_'+MODE+'_'+sitename+'.pkl'
-    # with open(forwardname, 'wb') as f: pickle.dump(PARA, f)
+    forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
+    with open(forwardname, 'wb') as f: pickle.dump(TS, f)
+    forwardname = forwardpath+'PARA_'+MODE+'_'+sitename+'.pkl'
+    with open(forwardname, 'wb') as f: pickle.dump(PARA, f)
     
     TS_temporal_mean = [np.nanmean(itm) for itm in TS] # temporal mean of ensemble mean
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
@@ -371,15 +371,15 @@ ACC = np.array(ACC)
 #print(OBS_mean.shape,TS_mean.shape,PARA_mean.shape,ACC.shape)
 #print(ACC)
 
-# obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
-# with open(obsname, 'wb') as f: 
-#     pickle.dump((OBS_mean,OBS_std,OBS_N), f)
+obsname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
+with open(obsname, 'wb') as f: 
+    pickle.dump((OBS_mean,OBS_std,OBS_N), f)
 # # OBS_mean, OBS_std = pickle.load(f)
 # # VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,LAI,ISO = OBS_mean[sub_fid,:] # (OBS_std[sub_fid,:]) temporal mean (std) of observation
     
-# estname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
-# with open(estname, 'wb') as f: 
-#     pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC), f)
+estname = statspath+'EST_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
+with open(estname, 'wb') as f: 
+    pickle.dump((TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC), f)
 # #TS_mean,TS_std,PARA_mean,PARA_std = pickle.load(f)
 # # VOD,ET,PSIL,S1 = TS_mean[sub_fid,:] # (TS_std[sub_fid,:]) temporal mean (std) of ensembel mean
 # # g1,lpx,psi50X,C,bexp,bc,sigma_et,sigma_vod,loglik,a,b,c = PARA_mean[sub_fid,:] # (PARA_std[sub_fid,:]) ensemble mean (std)
