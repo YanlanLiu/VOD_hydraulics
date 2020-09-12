@@ -236,13 +236,18 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
     r, power, K = hyperpara # hyper parameters
     rn = r/(1/K)**power
     
-    paraname = glob.glob(PREFIX+'*.pkl')    
-    if len(paraname)>0:
-        with open(paraname[0],'rb') as f: sample_para,sample_para0 = pickle.load(f)
+    paraname = PREFIX+'_sample_para.pkl' 
+    if os.path.isfile(paraname):
+        with open(paraname,'rb') as f: sample_para,sample_para0 = pickle.load(f)
         mu,sigma,rn,ii,theta,logp1 = sample_para
-        outlist = glob.glob(PREFIX+'*.pickle')
-        chunck_idx = len(outlist[0])-9
-        chunckid0 = np.max([int(itm[chunck_idx:chunck_idx+2]) for itm in outlist])+1
+        for chunckid in range(20):
+            if os.path.isfile(PREFIX+'_'+str(chunckid).zfill(2)+'.pickle'):
+                chunckid0 = np.copy(chunckid)+1
+            else:
+                continue
+        # # outlist = glob.glob(PREFIX+'*.pickle')
+        # chunck_idx = len(outlist[0])-9
+        # chunckid0 = np.max([int(itm[chunck_idx:chunck_idx+2]) for itm in outlist])+1
     else:
         theta = AMIS_proposal(mu,mu,sigma,tail_para,bounds)
         logp1 = lik_fun(theta) 
@@ -299,14 +304,13 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
 #        dloglik = (logp1-sample_para0[-1])/np.abs(sample_para0[-1])
         if acc>0.15: sample_para0 = copy(sample_para)
 
-        sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
-        sdf.to_pickle(outname)
+        # sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
+        # sdf.to_pickle(outname)
         sample = sample[-1,:]
         lik = [lik[-1]]
-        with open(PREFIX+'_sample_para.pkl', 'wb') as f:
-            pickle.dump((sample_para,sample_para0),f)       
-        #print(sample_para0[2],sample_para0[-1])
-        #print(sample_para[2],sample_para[-1])
+        # with open(PREFIX+'_sample_para.pkl', 'wb') as f:
+        #     pickle.dump((sample_para,sample_para0),f)       
+        
         
         
 
