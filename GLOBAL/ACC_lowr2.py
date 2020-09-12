@@ -74,18 +74,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
     with open(forwardname, 'rb') as f: 
         TS = pickle.load(f)
-        
-    paraname = forwardpath+'PARA_'+MODE+'_'+sitename+'.pkl'
-    with open(paraname, 'rb') as f: PARA = pickle.load(f)
-    
-    for sid in range(TS[0].shape[0]):
-        VOD_hat, ET_hat, S1_hat = (TS[0][sid,:],TS[1][sid,:],TS[3][sid,:])
-        sigma_VOD = PARA[1][sid,idx_sigma_vod]
-        sigma_ET = PARA[1][sid,idx_sigma_et]
-        sigma_SM = PARA[1][sid,idx_sigma_sm]
-        loglik_vod = np.nanmean(norm.logpdf(VOD_ma,VOD_hat,sigma_VOD))
-        loglik_et = np.nanmean(norm.logpdf(ET,ET_hat,sigma_ET))
-        loglik_sm = np.nanmean(norm.logpdf(SOILM,S1_hat,sigma_SM))
+
 
     TS = [np.nanmean(itm,axis=0) for itm in TS] 
     
@@ -115,3 +104,6 @@ toc = time.perf_counter()
     
 print(f"Running time (100 sites): {toc-tic:0.4f} seconds")
 
+#%%
+a = np.random.normal(0,1,100)
+print(np.nanmean(norm.logpdf(a,np.zeros(a.shape),1)))

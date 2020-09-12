@@ -234,9 +234,10 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     cdf1 = np.cumsum(counts)/sum(counts)
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
+    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(25)]
     print(PREFIX)
     try:
-        trace = GetTrace(PREFIX,0)
+        trace = GetTrace(flist,0)
         trace = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index']) 
         halftrace_mean = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].mean().values
         halftrace_std = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].std().values

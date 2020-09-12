@@ -339,14 +339,18 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)),singular
 
 
-def GetTrace(PREFIX,warmup=0):
-    flist = glob.glob(PREFIX+'*.pickle')
+def GetTrace(flist,warmup=0):
     flist.sort()
     chunck_idx = len(flist[0])-9
-    chain_idx = len(PREFIX)+1
+    # chain_idx = len(PREFIX)+1
+    chain_idx = len(flist[0])-11
     for outname in flist:
+        try:
+            trace = pd.read_pickle(outname)
+        except:
+            continue
+
         chainid = int(outname[chain_idx:chain_idx+1])
-        trace = pd.read_pickle(outname)
         if outname==flist[0]:varnames = list(trace)
         niter = len(trace)-1
         chunckid = int(outname[chunck_idx:chunck_idx+2])
