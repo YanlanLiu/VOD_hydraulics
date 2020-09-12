@@ -25,15 +25,15 @@ tic = time.perf_counter()
 
 # =========================== control pannel =============================
 
-# parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-# nsites_per_id = 100
-# warmup, nsample,thinning = (0.8,10,100)
-
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 44#4672
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,2,40)
+warmup, nsample,thinning = (0.8,10,100)
+
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 44#4672
+#nsites_per_id = 100
+#warmup, nsample,thinning = (0.8,2,40)
 
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
@@ -234,7 +234,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     cdf1 = np.cumsum(counts)/sum(counts)
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
-    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(25)]
+    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(20)]
     print(PREFIX)
     try:
         trace = GetTrace(flist,0)
@@ -242,8 +242,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         halftrace_mean = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].mean().values
         halftrace_std = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].std().values
         trace = trace[int(len(trace)*warmup):].reset_index().drop(columns=['index'])  
-        
-    except :
+    except:
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
@@ -290,7 +289,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         loglik_et = np.nanmean(norm.logpdf(ET,ET_hat,theta[idx_sigma_et]))
         loglik_sm = np.nanmean(norm.logpdf(SOILM,dS1_matched,theta[idx_sigma_sm]))
         
-        print([loglik_vod,loglik_et,loglik_sm])
+#        print([loglik_vod,loglik_et,loglik_sm])
         TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
         PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta,[loglik_vod,loglik_et,loglik_sm]))]
         
