@@ -304,12 +304,12 @@ def AMIS(lik_fun,PREFIX,varnames, bounds, p50_init, samplenum, hyperpara = (0.1,
 #        dloglik = (logp1-sample_para0[-1])/np.abs(sample_para0[-1])
         if acc>0.15: sample_para0 = copy(sample_para)
 
-        # sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
-        # sdf.to_pickle(outname)
+        sdf = pd.DataFrame(np.column_stack([sample*scale,lik]),columns = varnames)
+        sdf.to_pickle(outname)
         sample = sample[-1,:]
         lik = [lik[-1]]
-        # with open(PREFIX+'_sample_para.pkl', 'wb') as f:
-        #     pickle.dump((sample_para,sample_para0),f)       
+        with open(PREFIX+'_sample_para.pkl', 'wb') as f:
+            pickle.dump((sample_para,sample_para0),f)       
         
         
         

@@ -59,7 +59,7 @@ RSlist = [125,150,150,100,125,300,170,300,70,40,70,40,200,40,999,999,100,150,150
 OBS_mean = []; OBS_std = []; OBSnan = [np.nan for i in range(9)]
 OBS_N = []; OBSNnan = [np.nan for i in range(3)]
 TS_mean = []; TS_std = []; TSnan = [np.nan for i in range(4)]
-PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(14)]
+PARA_mean = []; PARA_std = []; PARAnan = [np.nan for i in range(17)]
 PARA2_mean = []; PARA2_std = []; PARA2nan = [np.nan for i in varnames]
 
 ACC = []; ACCnan = [np.nan for i in range(4)]
@@ -71,11 +71,12 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
         VOD[IsOutlier(VOD,multiplier=2)] = np.nan
         SOILM[IsOutlier(SOILM,multiplier=2)] = np.nan
-    except FileNotFoundError as err:
+    except (FileNotFoundError,KeyError) as err:
         print(err)
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
+        PARA2_mean.append(PARA2nan); PARA2_std.append(PARA2nan)
         ACC.append(ACCnan)
         continue
 
@@ -291,14 +292,15 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         
 #        print([loglik_vod,loglik_et,loglik_sm])
         TS = [np.concatenate([TS[ii],itm]) for ii,itm in enumerate((VOD_hat,ET_hat,PSIL_hat,dS1_matched))]
-        PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta,[loglik_vod,loglik_et,loglik_sm]))]
-        
+#        PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta,[loglik_vod,loglik_et,loglik_sm]))]
+        PARA = [np.concatenate([PARA[ii],itm]) for ii,itm in enumerate((popt,theta,np.array([loglik_vod,loglik_et,loglik_sm])))]
+
         #toc = time.perf_counter()
         #print(f"Sample time: {toc-tic:0.4f} seconds")
 
     TS = [np.reshape(itm,[nsample,-1]) for itm in TS] # VOD,ET,PSIL,S1
     PARA = [np.reshape(itm,[nsample,-1]) for itm in PARA]
-        
+    #print(len(PARA)); print(itm.shape() for itm in PARA)       
        
     forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
     with open(forwardname, 'wb') as f: pickle.dump(TS, f)
@@ -309,7 +311,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_temporal_std = [np.nanstd(np.nanmean(itm,axis=0)) for itm in TS] # temporal std of ensemble mean
     PARA_ensembel_mean = np.concatenate([np.nanmean(itm,axis=0) for itm in PARA[::-1]])
     PARA_ensembel_std = np.concatenate([np.nanstd(itm,axis=0) for itm in PARA[::-1]])
-
+#    print(PARA_ensembel_std.shape)
         
     # ======== OBS stats ===========
     OBS = (VOD_ma,ET,SOILM,RNET,TEMP,P,VPD,PET,LAI)
@@ -347,6 +349,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     TS_mean.append(TS_temporal_mean); TS_std.append(TS_temporal_std)
     PARA_mean.append(PARA_ensembel_mean); PARA_std.append(PARA_ensembel_std)
     PARA2_mean.append(halftrace_mean); PARA2_std.append(halftrace_std)
+    print(len(PARA2_mean))
     ACC.append(acc_summary)
     toc = time.perf_counter()
     print(f"Site time: {toc-tic:0.4f} seconds")
