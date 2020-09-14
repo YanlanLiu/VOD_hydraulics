@@ -29,7 +29,7 @@ MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
-Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
+Collection_PARA = np.zeros([len(SiteInfo),17])+np.nan
 Collection_STD = np.zeros([len(SiteInfo),11])+np.nan
 
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
@@ -42,6 +42,15 @@ for arrayid in range(933):
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
             TS_mean,TS_std,PARA_mean,PARA_std,PARA2_mean,PARA2_std,ACC = pickle.load(f)
+        # PARA_mean = np.array(PARA_mean,dtype=np.float)
+            
+        # if PARA_mean.shape[1]==1:
+        #     for i,ii in enumerate(PARA_mean):
+        #         if np.isnan(np.sum(ii[0])): ii = [[np.nan for j in range(17)]]
+        #         tmp = np.row_stack([tmp,ii[0]]) if i>0 else np.copy(ii[0])
+        #     PARA_mean = tmp.copy()
+        # elif PARA_mean.shape[1]==14:
+        #     PARA_mean = np.concatenate([PARA_mean,np.zeros([PARA_mean.shape[0],3])+np.nan],axis=1)
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
             Collection_PARA[subrange,:] = PARA_mean
@@ -337,4 +346,10 @@ plt.ylabel(r'Estimated $\psi_{50}$ (MPa)')
 # plt.legend(bbox_to_anchor=(1.75,1.05))
 # plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 
-
+#%% 
+for i in range(10):
+    print(i)
+    if i==5:
+        print('bp')
+    else:
+        continue
