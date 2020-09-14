@@ -110,6 +110,77 @@ def readCLM(inpath,sitename):
     
     return Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,[amidx,pmidx]
 
+def readCLM_test(inpath,sitename):
+    r,c = sitename.split('_')
+    lat,lon= LatLon(int(r),int(c))
+    df = pd.read_csv(inpath+'Climate/GLDAS_'+sitename+'.csv').drop(columns=['Unnamed: 0'])
+    
+    # local time, adjust Greenwich time to local time based on longitutde
+    tt_gldas = np.array([datetime(2002,12,31,0,0)+timedelta(hours=3*i+round(lon/15)) for i in range(len(df))])
+    # tt_gldas = np.array([datetime.strptime(tmp,'A%Y%m%d_%H%M')+timedelta(hours=round(lon/15)) for tmp in np.array(df['system:index'])])
+    idx1 = np.where(tt_gldas>start_date)[0][0]
+    idx2 = np.where(tt_gldas<=end_date)[0][-1]+1
+    ndays = int((idx2-idx1)/nobsinaday)
+    df = df.iloc[idx1:idx2].reset_index().drop(columns=['index'])
+    tt_gldas = tt_gldas[idx1:idx2]
+    
+    pmidx = np.argmin(np.abs([itm.timetuple().tm_hour-13.5 for itm in tt_gldas[:nobsinaday]]))
+    amidx = np.argmin(np.abs([itm.timetuple().tm_hour-1.5 for itm in tt_gldas[:nobsinaday]]))
+    
+    TEMP = np.array(df['Tair_f_inst'])
+    RNET = np.array(df['Swnet_tavg']); RNET[RNET<0] = 0
+    P = np.array(df['Rainf_f_tavg'])*60*60 # mm/hr
+    Psurf = np.array(df['Psurf_f_inst'])/1e3 # kPa
+    VPD = T2ES(TEMP)/Psurf-np.array(df['Qair_f_inst'])
+    Cpmol = 1005*28.97*1e-3 # J/kg/K*kg/mol -> J/mol/K
+    GA = np.array(df['Qh_tavg'])/Cpmol/(np.array(df['AvgSurfT_inst'])-np.array(df['Tair_f_inst']))*0.02405  #mol/m2/s to m/s
+    GA[GA<1e-6] = 1e-6; GA[GA>2] = 2 
+
+    df_LAI = pd.read_csv(inpath+'LAI/LAI_'+sitename+'.csv')
+    tt_lai = np.array([datetime.strptime(tmp,'%Y_%m_%d') for tmp in np.array(df_LAI['system:index'])])
+    LAI = np.array(df_LAI['Lai'].interpolate(method='linear'))/10
+    LAI = np.interp(toTimestamp(tt_gldas),toTimestamp(tt_lai),savitzky_golay(LAI,30,1))
+    
+    
+    DOY = np.array([itm.timetuple().tm_yday+itm.timetuple().tm_hour/24 for itm in tt_gldas])
+    leaf_angle_distr = 1
+    VegK = LightExtinction(DOY,lat,leaf_angle_distr)
+    
+    discard = (dailyAvg(P,nobsinaday)>10/nobsinaday)+(dailyMin(TEMP-UNIT_3,nobsinaday)<-1)
+    discard[:warmup] = True
+    discard_vod = np.repeat(discard,2)
+    discard_psil = np.repeat(discard,nobsinaday)
+    discard_et = (hour2week(discard_psil,UNIT=1)>0.5)
+    dLAI = np.repeat(dailyAvg(LAI,nobsinaday),2)[~discard_vod]
+    dLAI0 = np.repeat(dailyAvg(LAI,nobsinaday),2)
+    amsr = pd.read_csv(inpath+'AMSRE/VOD_'+sitename+'.csv').drop(columns=['Unnamed: 0'])
+    tt_amsr = np.arange(np.datetime64('2003-01-01'),np.datetime64('2012-01-01'))
+    # tt_amsr = np.arange(np.datetime64(amsr['Time'][0]),np.datetime64(amsr['Time'][len(amsr)-1])+np.timedelta64(1,'D')).astype(datetime)
+    idx_vod = np.where(tt_amsr==tt_gldas[0].date())[0][0]
+    amsr = amsr[idx_vod:idx_vod+ndays]
+    VOD = np.reshape(np.column_stack([rm_outlier(amsr['VOD_am']),rm_outlier(amsr['VOD_pm'])]),[-1,])[~discard_vod]
+    SOILM = rm_outlier(amsr['SOILM_am'])[~discard_vod[::2]]/100
+    
+    alexi = pd.read_csv(inpath+'ALEXI/ET_'+sitename+'.csv')
+    tt_alexi = np.array([itm for y in range(2003,2012) for itm in np.arange(np.datetime64(str(y)+'-01-08'),np.datetime64(str(y+1)+'-01-01'), np.timedelta64(7,'D'))])
+    # tt_alexi = np.array([datetime.strptime(tmp,'%Y-%m-%d') for tmp in np.array(alexi['Time'])])
+    ET = np.array(alexi['ET'])
+    
+    idx_et1 = np.where(tt_alexi>tt_gldas[0].date())[0][0]
+    idx_et2 = np.where(tt_alexi<=tt_gldas[-1].date())[0][-1]+1
+    
+    if sum(np.isnan(ET))<len(ET)/2:
+        sn = np.nanmean(np.reshape(ET,[-1,52]),axis=0)  
+        ET = rm_outlier_sn(ET,sn)[idx_et1:idx_et2][~discard_et]
+    else:
+        ET = ET[idx_et1:idx_et2][~discard_et]
+        
+    Forcings = (RNET,TEMP,P,VPD,Psurf,GA,LAI,VegK)
+    # Obsv = (VOD,ET,dLAI)
+    # Discard = (discard_vod,discard_et,[amidx,pmidx])
+    
+    return Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,[amidx,pmidx],dLAI0
+
 def LightExtinction(DOY,lat,x):
     B = (DOY-81)*2*np.pi/365
     ET = 9.87*np.sin(2*B)-7.53*np.cos(B)-1.5*np.sin(B)
