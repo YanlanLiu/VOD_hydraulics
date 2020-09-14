@@ -343,16 +343,14 @@ def AMIS_prop_loglik(theta,mu,sigma,tail_para):
     return np.log(multivariate_normal.pdf(theta,mu0,sigma0)*ll+p2*(1-ll)),singular
 
 
-def GetTrace(flist,warmup=0):
-    flist.sort()
+def GetTrace(flist0,warmup=0):
+    flist = [itm for itm in flist0 if os.path.isfile(itm)]
+    flist.sort()  
     chunck_idx = len(flist[0])-9
-    # chain_idx = len(PREFIX)+1
     chain_idx = len(flist[0])-11
+
     for outname in flist:
-        try:
-            trace = pd.read_pickle(outname)
-        except:
-            continue
+        trace = pd.read_pickle(outname)
 
         chainid = int(outname[chain_idx:chain_idx+1])
         if outname==flist[0]:varnames = list(trace)
@@ -364,8 +362,6 @@ def GetTrace(flist,warmup=0):
         
         if outname==flist[0]: trace_df = tmp 
         else: trace_df = pd.concat([trace_df,tmp])
-#    print(list(trace_df))
-   # print(np.unique(trace_df['chain']),np.unique(trace_df['chunk']))
     trace_df = trace_df[trace_df['step']>trace_df['step'].max()*warmup].sort_values(['step']).dropna().reset_index().drop(columns=['index','level_0','chain','chunk','step'])
     return trace_df
 

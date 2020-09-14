@@ -27,8 +27,9 @@ tic = time.perf_counter()
 
 parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+#arrayid = 849
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,10,100)
+warmup, nsample,thinning = (0.8,20,100)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 44#4672
@@ -65,6 +66,7 @@ PARA2_mean = []; PARA2_std = []; PARA2nan = [np.nan for i in varnames]
 ACC = []; ACCnan = [np.nan for i in range(4)]
 
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
+#for fid in range(arrayid*nsites_per_id,arrayid*nsites_per_id+1):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)
     try:
@@ -244,6 +246,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
         halftrace_std = trace[int(len(trace)*0.5):].reset_index().drop(columns=['index'])[varnames].std().values
         trace = trace[int(len(trace)*warmup):].reset_index().drop(columns=['index'])  
     except:
+        print('trace not found')
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
         TS_mean.append(TSnan); TS_std.append(TSnan)
         PARA_mean.append(PARAnan); PARA_std.append(PARAnan)
@@ -258,17 +261,9 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     for count in range(nsample):
         idx_s = max(len(trace)-1-count*thinning,0)#randint(0,len(trace))
         print(idx_s)
-        try:
-            tmp = trace['g1'].iloc[idx_s]
-        except IndexError:
-            print(trace)
-            print(idx_s)
-            print(sitename) 
         theta = trace.iloc[idx_s][varnames].values
         tic0 = time.perf_counter()
         PSIL_hat,ET_hat,S1_hat = runhh_2soil_hydro(theta)
-        #toc0 = time.perf_counter()
-        #print(f"net run time: {toc0-tic:0.4f} seconds")
 
         
         # ET_ampm = hour2day(E_hat+T_hat,[idx[1]-1,idx[1]])[~discard_vod]
