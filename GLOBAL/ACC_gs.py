@@ -54,7 +54,7 @@ idx_sigma_sm = varnames.index('sigma_sm')
 # from datetime import datetime, timedelta
 # start_date = datetime(2003,7,2); end_date = datetime(2006,1,1)
 # DOY = np.array([itm.timetuple().tm_yday for itm in [start_date+timedelta(days=i) for i in range((end_date-start_date).days)]])
-
+accnan = [np.nan for i in range(12)]
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):#range(953,954):#
     print(fid)
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
@@ -70,9 +70,13 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
 
 
     forwardname = forwardpath+'TS_'+MODE+'_'+sitename+'.pkl'
-    with open(forwardname, 'rb') as f: 
-        TS = pickle.load(f)
-
+    try:
+        with open(forwardname, 'rb') as f: 
+            TS = pickle.load(f)
+    else:
+        ACC.append(accnan)
+        continue
+        
     TS = [np.nanmean(itm,axis=0) for itm in TS] 
     
     er2 = [nancorr(TS[0],VOD_ma)**2, nancorr(TS[1],ET)**2, nancorr(TS[3],SOILM)**2] # VOD, ET, SM
