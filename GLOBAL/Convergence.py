@@ -19,25 +19,20 @@ import time
 
 tic = time.perf_counter()
 
-# parentpath = '/scratch/users/yanlan/'
-# arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
-# #arrayid = 849
-# nsites_per_id = 100
-# warmup, nsample,thinning = (0.8,20,100)
+parentpath = '/scratch/users/yanlan/'
+arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
+nsites_per_id = 1000
 # 
-parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
-arrayid = 10#4672
-nsites_per_id = 100
-warmup, nsample,thinning = (0.8,2,40)
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#arrayid = 10#4672
+#nsites_per_id = 5
+#warmup, nsample,thinning = (0.8,2,40)
 
 
-
-cc = [0,1,2]
+numofchains = 3
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
 outpath = versionpath +'Output/'
-forwardpath = versionpath+'Forward/'
-statspath = versionpath+'STATS/'
 cpath = versionpath+'CVG/'
 
 MODE = 'VOD_SM_ET'
@@ -57,19 +52,17 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(20)]
     try:
         trace = GetTrace0(flist,0)
+        trace_s = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index'])
+        st_list = range(0,int(len(trace_s)/sample_length)*sample_length-sample_length+1,step)
     except:
         print("No trace")
         CVG.append(CVGnan)
         
-    trace_s = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index'])
-    st_list = range(0,int(len(trace_s)/sample_length)*sample_length-sample_length+1,step)
-
-
 
     paralist=varnames[:7]
     cc = np.unique(trace['chain'])
-    GW = np.zeros([len(paralist)])
-    GR = np.zeros([len(paralist),])
+    GW = []#np.zeros([len(paralist)])
+    GR = []#np.zeros([len(paralist),])
     M = len(cc)
     N = np.copy(sample_length)
     
@@ -82,7 +75,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             tmps = chain[st:(st+sample_length)]
             tmpe = chain[-sample_length:]
             Geweke.append((np.nanmean(tmps)-np.nanmean(tmpe))/np.sqrt(np.nanvar(tmps)+np.nanvar(tmpe)))
-        GW[j] = np.quantile(np.abs(Geweke[int(len(st_list)*0.8):]),.1)
+        GW.append(np.percentile(np.abs(Geweke[int(len(st_list)*0.8):]),10))
     
     
         st_list = range(0,int((trace['step'].max())/sample_length)*sample_length-sample_length,step)
@@ -99,12 +92,21 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
             W = np.mean(s_m)
             V = (N-1)/N*W+(M+1)/M/N*B
             GelmenRubin.append(np.sqrt(V/W))
-        GR[j] = np.quantile(GelmenRubin[int(len(st_list)*0.5):],.2)
+        GR.append(np.percentile(GelmenRubin[int(len(st_list)*0.5):],20))
     
-    Count = (trace_s[int(len(trace_s)*0.8):].reset_index().drop(columns=['index']))['chain'].value_counts().values
-    
-    entry = np.concatenate([GW,GR,Count])
+
+    trace_merged = trace_s[int(len(trace_s)*0.7):].reset_index().drop(columns=['index'])
+    Count = trace_merged['chain'].value_counts().values
+    cc0 = np.unique(trace_merged['chain'])
+    if len(Count)<numofchains:
+        t_count = [np.nan for i in range(numofchains)]
+        for ii,ci in enumerate(cc0): t_count[ci] = Count[ii]
+    else:
+        t_count = list(Count)
+    entry = GW+GR+t_count#np.concatenate([GW,GR,Count])
     CVG.append(entry)
+    print(entry)
+    print(len(entry))
 #%%   
 
 CVG = np.array(CVG)
