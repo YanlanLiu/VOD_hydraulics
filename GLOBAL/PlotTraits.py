@@ -324,7 +324,8 @@ fia_s['Land cover'] = fia_s['IGBPnames']
 fia_s = fia_s.reset_index()
 nplots = fia_s['nplots']
 
-sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='deep')
+# for 
+sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='colorblind')
 # for i in range(len(fia_s)):
 #     plt.plot(fia_s['P50'].iloc[i]*np.array([1,1]),fia_s['P50_hat'].iloc[i]+fia_s['P50_std'].iloc[i]*np.array([-1,1]),'-',color='grey',alpha=0.5)
 plt.legend(bbox_to_anchor=(1.05,1.05),title='')
