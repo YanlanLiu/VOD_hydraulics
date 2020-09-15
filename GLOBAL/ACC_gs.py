@@ -73,7 +73,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     try:
         with open(forwardname, 'rb') as f: 
             TS = pickle.load(f)
-    else:
+    except:
         ACC.append(accnan)
         continue
         
