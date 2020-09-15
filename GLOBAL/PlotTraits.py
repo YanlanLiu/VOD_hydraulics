@@ -67,26 +67,7 @@ for arrayid in range(933):
 
 #%%
 mycmap = sns.cubehelix_palette(rot=-.65, as_cmap=True)
-def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=Tru#% Gelman-Rubin diagnostic
-            M = len(cc)
-            N = np.copy(sample_length)
-            GR = []
-            for st in st_list:
-                tmp_trace = trace_df[(trace_df['step']>=st) & (trace_df['step']<st+sample_length)]
-                #n = np.mean(np.array([len(trace_df[varname][trace_df['chain']==chainid]) for chainid in range(10)]))
-                theta_m = np.array([tmp_trace[varname][tmp_trace['chain']==chainid].mean() for chainid in cc])
-                s_m = np.array([tmp_trace[varname][tmp_trace['chain']==chainid].var() for chainid in cc])
-            
-                B = np.var(theta_m)*M/(M-1)*N
-                W = np.mean(s_m)
-                V = (N-1)/N*W+(M+1)/M/N*B
-                GR.append(np.sqrt(V/W))
-    
-            tmp = np.where(np.array(GR)<1.05)[0]
-            if len(tmp)>0:
-                GRidx[j] = min(tmp)
-            else:
-                GRidx[j] = np.nan   e,borderpad=2.1,drawmask=True):
+def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.1,drawmask=True):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
     fig, ax = plt.subplots(figsize=(13.2,5))
@@ -105,7 +86,7 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=Tru#% Gelman
         
         xlim = axins.get_xlim()
         ylim = axins.get_ylim()
-        axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
+        # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
         axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
         # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
         axins.text(sum(xlim)/4,ylim[0]-(ylim[1]-ylim[0])/3,cbartitle,fontsize=18)
@@ -115,10 +96,10 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=Tru#% Gelman
         cbar.set_label(cbartitle,rotation=360,labelpad=-30,y=1.15)
     return 0
 
-plotmap(df_acc,'r2_sm',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
+# plotmap(df_acc,'r2_sm',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
 
 #%%
-df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N,Collection_PARA[:,-3:]],axis=1),
+df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N,Collection_PARA[:,:3]],axis=1),
                       columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm','ll_vod','ll_et','ll_sm'])
 df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']; df_acc['IGBP'] = SiteInfo['IGBP']
 # df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)] = df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)]*2
@@ -126,11 +107,15 @@ plotmap(df_acc,'r2_vod',cbartitle=r'$R^2_{VOD}$')
 plotmap(df_acc,'r2_et',cbartitle=r'$R^2_{ET}$')
 plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
 
+#%%
+df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']<0.1)].reset_index()).iloc[np.arange(0,20300,1000)]
+plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
+df_tmp.to_csv('pixels.csv')
 
 #%%
-df_acc['ll_vod'] = df_acc['ll_vod']+0.1
+# df_acc['ll_vod'] = df_acc['ll_vod']+0.1
 
-plotmap(df_acc,'ll_vod',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
+plotmap(df_acc,'ll_vod',cbartitle=r'$loglik_{VOD}$',vmin=-1,vmax=2,inset=False)
 plotmap(df_acc,'ll_et',cbartitle=r'$loglik_{ET}$',vmin=0,vmax=1,inset=False)
 plotmap(df_acc,'ll_sm',cbartitle=r'$loglik_{SM}$',vmin=0,vmax=1,inset=False)
 
@@ -188,9 +173,8 @@ plotmap(df_std,'psi50X',vmin=0,vmax=5,cmap='RdYlBu_r',cbartitle=r'$\psi_{50,x}$'
 plotmap(df_std,'g1',vmin=0,vmax=2,cmap='RdYlBu_r',cbartitle=r'$g_1$',inset=False)
 
 
-
 #%%
-df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
+df_para = pd.DataFrame(Collection_PARA[:,3:],columns=varnames+['a','b','c'])
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
 df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
@@ -329,15 +313,18 @@ fia = fia[(fia['Nhat']>4) & igbpfilter]
 plt.figure(figsize=(6,6))
 xlim = [-9.5,-0.4]
 # sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
-nplots = fia['nplots']
 
 fia_s = fia[fia['IGBPnames']=='ENF']
 for igbp in ['EBF','DBF','MF']:
     fia_s = pd.concat([fia_s,fia[fia['IGBPnames']==igbp]],axis=0)
 
 fia_s['Land cover'] = fia_s['IGBPnames']
+
+# fia_s.drop(fia_s[(fia_s['P50']<-7)&(fia_s['P50_hat']>-4)].index,inplace=True)
 fia_s = fia_s.reset_index()
-sns.scatterplot(x="P50", y="P50_hat",s=np.log(nplots+1)*30,alpha=0.5, hue="Land cover",data=fia_s)
+nplots = fia_s['nplots']
+
+sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='deep')
 # for i in range(len(fia_s)):
 #     plt.plot(fia_s['P50'].iloc[i]*np.array([1,1]),fia_s['P50_hat'].iloc[i]+fia_s['P50_std'].iloc[i]*np.array([-1,1]),'-',color='grey',alpha=0.5)
 plt.legend(bbox_to_anchor=(1.05,1.05),title='')

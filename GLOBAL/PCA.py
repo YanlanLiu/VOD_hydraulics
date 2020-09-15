@@ -34,7 +34,7 @@ MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
-Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
+Collection_PARA = np.zeros([len(SiteInfo),17])+np.nan
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
 # Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
 
@@ -64,6 +64,7 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
     m.drawcoastlines()
     m.drawcountries()
+    m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
     lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
     cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
     cbar = m.colorbar(cs)
@@ -72,7 +73,7 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap):
     return 0
 #%%
 # df_para = pd.DataFrame(Collection_PARA,columns=varnames+['a','b','c'])
-df_para = pd.DataFrame(np.concatenate([Collection_PARA,Collection_OBS],axis=1),
+df_para = pd.DataFrame(np.concatenate([Collection_PARA[:,3:],Collection_OBS],axis=1),
                         columns=varnames+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI'])
 df_para['DI'] = df_para['PET']/(df_para['P']*24) # mm/day
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
@@ -82,13 +83,15 @@ df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 # plotmap(df_para,'psi50X',vmin=-7,vmax=0,cmap='RdYlBu')
 df_para = df_para.dropna()
-plotmap(df_para,'DI',vmin=0,vmax=5)
+# plotmap(df_para,'DI',vmin=0,vmax=5)
 
 Y = np.array(df_para[varnames[:5]])
 # Y[:,2] = -Y[:,2] # P50X
 # Y[:,1] = Y[:,1]*Y[:,2] # P50S
 Ymean = np.nanmean(Y,axis=0)
 Ystd = np.nanstd(Y,axis=0)
+Ymin = np.nanpercentile(Y,5,axis=0)
+Ymax = np.nanpercentile(Y,95,axis=0)
 Yc = (Y-Ymean)/Ystd
     
 #%% K-means clustering
@@ -153,28 +156,63 @@ klabel_s = np.array([sorted_idx.index(i) for i in klabel])
 df_para['clusters_6'] = klabel_s
 # df_para.to_csv('SiteInfo_clusters.csv')
 #%% 
-cc = [sns.color_palette("Paired")[i] for i in [3,0,1,11,4]]
-cc[0] = sns.color_palette("BrBG_r", 5)[0]
-cc[4] = sns.color_palette("Set2")[6]
+# cc = [sns.color_palette("Paired")[i] for i in [3,0,1,11,4]]
+# cc[0] = sns.color_palette("BrBG_r", 5)[0]
+# cc[4] = sns.color_palette("Set2")[6]
 
+# dd = 0.15
+# vnames = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$']
+# plt.figure(figsize=(10,5))
+# vid = 0
+# plt.bar(np.arange(n_clusters)+(vid-2)*dd,kcenter_s[:,vid],width=dd,color=cc[vid],label=vnames[vid])
+# plt.bar(1,2,color='w',alpha=1,label=' ')
+# for vid in [2,1,3,4]:
+#     plt.bar(np.arange(n_clusters)+(vid-2)*dd,kcenter_s[:,vid],width=dd,color=cc[vid],label=vnames[vid])
+# plt.legend(ncol=3)
+# plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+# plt.ylabel('Normalized value')
+#%%
+# cc = [sns.color_palette("Paired")[i] for i in [0,1,8,9,10,11]]
+# cc = [sns.color_palette("Paired")[i] for i in [0,1,2,3,10,11]]
+# cc = [sns.color_palette("Paired")[i] for i in [1,0,3,2,11,6]]
+# cc = [sns.color_palette("Paired")[i] for i in [0,1,2,3,6,11]] # second best
+# cc = [sns.color_palette("Paired")[i] for i in [6,11,2,3,0,1]]
+# cc = [sns.color_palette("Paired")[i] for i in [6,11,0,1,4,5]]
+
+cc = [sns.color_palette("Paired")[i] for i in [6,11,2,3,8,9]] # best
+
+# cc[0] = sns.color_palette("BrBG_r", 5)[0]
+# cc[0]= sns.color_palette("Blues", 5)[-1]
+# cc[1]= sns.color_palette("Blues", 5)[-3]
+# cc[5] = sns.color_palette("Set2")[5]
+# cc = [sns.color_palette("Set2")[i] for i in range(0,6)]
 dd = 0.15
 vnames = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$']
+clusternames = ['C'+str(i) for i in range(1,n_clusters+1)]
+
+kcenter_rescale = np.copy(kcenter_s)
+# for vid in range(len(vnames)):
+#     for cid in range(len(clusternames)):
+#         kcenter_rescale[cid,vid] = sum(Yc[:,vid]<kcenter_s[cid,vid])/len(Yc)
+    # kcenter_rescale[:,vid] = ((kcenter_s[:,vid]*Ystd[vid]+Ymean[vid])-Ymin[vid])/(Ymax[vid]-Ymin[vid])
+
+
+# kcenter_rescale[kcenter_rescale<0] = 0.01
 plt.figure(figsize=(10,5))
-vid = 0
-plt.bar(np.arange(n_clusters)+(vid-2)*dd,kcenter_s[:,vid],width=dd,color=cc[vid],label=vnames[vid])
-plt.bar(1,2,color='w',alpha=1,label=' ')
-for vid in [2,1,3,4]:
-    plt.bar(np.arange(n_clusters)+(vid-2)*dd,kcenter_s[:,vid],width=dd,color=cc[vid],label=vnames[vid])
-plt.legend(ncol=3)
-plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+# cid = 0
+# plt.bar(np.arange(len(varnames))+(cid-2.5)*dd,kcenter_s[cid,:],width=dd,color=cc[cid],label=clusternames[cid])
+# plt.bar(1,2,color='w',alpha=1,label=' ')
+for cid in range(n_clusters):
+    plt.bar(np.arange(len(vnames))+(cid-2.5)*dd,kcenter_rescale[cid,:],width=dd,color=cc[cid],label=clusternames[cid])
+plt.legend(ncol=2,bbox_to_anchor=(1.05,1.05))
+plt.xticks(np.arange(len(vnames)),vnames)
 plt.ylabel('Normalized value')
+# plt.ylim([-3.5,2])
 
 
-#%%
+# %%
 df_km =  df_para[['row','col']]
 df_km['clusters'] = klabel_s
-# cc = [sns.color_palette("Paired")[i] for i in [7,6,3,2,9,8]] # [0,1,2,3,6,11]
-cc = [sns.color_palette("Paired")[i] for i in [6,7,2,3,8,9]] # [0,1,2,3,6,11]
 
 cmap0 = colors.ListedColormap(cc)
 # plotmap(df_km,'clusters',vmin=0,vmax=n_clusters,cmap=cmap0)
@@ -184,10 +222,11 @@ plt.figure(figsize=(13.2,5))
 m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
 m.drawcoastlines()
 m.drawcountries()
+m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
 lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
 cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap0,vmin=-0.5,vmax=5.5,shading='flat')
 cbar = m.colorbar(cs)
-cbar.ax.set_yticklabels(['C'+str(i) for i in range(n_clusters)])
+cbar.ax.set_yticklabels(clusternames)
 # cbar.set_label(varname,rotation=360,labelpad=15)
 plt.show()
 
