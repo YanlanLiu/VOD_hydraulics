@@ -30,7 +30,7 @@ varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
 Collection_PARA = np.zeros([len(SiteInfo),17])+np.nan
-Collection_STD = np.zeros([len(SiteInfo),11])+np.nan
+Collection_STD = np.zeros([len(SiteInfo),17])+np.nan
 
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
 Collection_N = np.zeros([len(SiteInfo),3])+np.nan
@@ -54,7 +54,7 @@ for arrayid in range(933):
         if ACC.shape[1]>0:
             Collection_ACC[subrange,:] = ACC
             Collection_PARA[subrange,:] = PARA_mean
-            Collection_STD[subrange,:] = PARA2_std*2
+            Collection_STD[subrange,:] = PARA_std
     fname = statspath+'OBS_'+MODE+'_'+str(arrayid).zfill(3)+'.pkl'
     if os.path.isfile(fname):
         with open(fname,'rb') as f:
@@ -66,12 +66,32 @@ for arrayid in range(933):
             
 
 #%%
-mycmap = sns.cubehelix_palette(rot=-.63, as_cmap=True)
-def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.1):
+mycmap = sns.cubehelix_palette(rot=-.65, as_cmap=True)
+def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=Tru#% Gelman-Rubin diagnostic
+            M = len(cc)
+            N = np.copy(sample_length)
+            GR = []
+            for st in st_list:
+                tmp_trace = trace_df[(trace_df['step']>=st) & (trace_df['step']<st+sample_length)]
+                #n = np.mean(np.array([len(trace_df[varname][trace_df['chain']==chainid]) for chainid in range(10)]))
+                theta_m = np.array([tmp_trace[varname][tmp_trace['chain']==chainid].mean() for chainid in cc])
+                s_m = np.array([tmp_trace[varname][tmp_trace['chain']==chainid].var() for chainid in cc])
+            
+                B = np.var(theta_m)*M/(M-1)*N
+                W = np.mean(s_m)
+                V = (N-1)/N*W+(M+1)/M/N*B
+                GR.append(np.sqrt(V/W))
+    
+            tmp = np.where(np.array(GR)<1.05)[0]
+            if len(tmp)>0:
+                GRidx[j] = min(tmp)
+            else:
+                GRidx[j] = np.nan   e,borderpad=2.1,drawmask=True):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
     fig, ax = plt.subplots(figsize=(13.2,5))
     m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
     m.drawcoastlines()
     m.drawcountries()
     lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
@@ -79,7 +99,7 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderp
     cbar = m.colorbar(cs)
     # cbar.set_label(cbartitle,rotation=360,labelpad=23)
     if inset:
-        c1 = color=sns.cubehelix_palette(rot=-.63)[-2]
+        c1 = sns.cubehelix_palette(rot=-.65)[-2]
         axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=borderpad)
         sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
         
@@ -95,8 +115,11 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderp
         cbar.set_label(cbartitle,rotation=360,labelpad=-30,y=1.15)
     return 0
 
+plotmap(df_acc,'r2_sm',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
+
 #%%
-df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N],axis=1),columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm'])
+df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N,Collection_PARA[:,-3:]],axis=1),
+                      columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm','ll_vod','ll_et','ll_sm'])
 df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']; df_acc['IGBP'] = SiteInfo['IGBP']
 # df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)] = df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)]*2
 plotmap(df_acc,'r2_vod',cbartitle=r'$R^2_{VOD}$')
@@ -105,8 +128,18 @@ plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
 
 
 #%%
-plotmap(df_acc[(df_acc['IGBP']<11)],'r2_sm',cbartitle=r'$R^2_{SM}$')
+df_acc['ll_vod'] = df_acc['ll_vod']+0.1
 
+plotmap(df_acc,'ll_vod',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
+plotmap(df_acc,'ll_et',cbartitle=r'$loglik_{ET}$',vmin=0,vmax=1,inset=False)
+plotmap(df_acc,'ll_sm',cbartitle=r'$loglik_{SM}$',vmin=0,vmax=1,inset=False)
+
+#%%
+from scipy.stats import norm
+a = np.random.normal(0,1,100)
+print(np.nanmean(norm.logpdf(a,np.zeros([100,]),1)))
+
+# plotmap(df_acc[(df_acc['IGBP']<11)],'r2_sm',cbartitle=r'$R^2_{SM}$')
 # plt.figure()
 # sns.kdeplot(df_acc['r2_vod'])
 # sns.kdeplot(df_acc['r2_et'])

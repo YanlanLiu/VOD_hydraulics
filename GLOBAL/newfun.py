@@ -436,7 +436,27 @@ def GetTrace(flist0,warmup=0):
     trace_df = trace_df[trace_df['step']>trace_df['step'].max()*warmup].sort_values(['step']).dropna().reset_index().drop(columns=['index','level_0','chain','chunk','step'])
     return trace_df
 
+def GetTrace0(flist0,warmup=0):
+    flist = [itm for itm in flist0 if os.path.isfile(itm)]
+    flist.sort()  
+    chunck_idx = len(flist[0])-9
+    chain_idx = len(flist[0])-11
 
+    for outname in flist:
+        trace = pd.read_pickle(outname)
+
+        chainid = int(outname[chain_idx:chain_idx+1])
+        if outname==flist[0]:varnames = list(trace)
+        niter = len(trace)-1
+        chunckid = int(outname[chunck_idx:chunck_idx+2])
+        tmp = pd.DataFrame(data={'index':np.arange(0,niter),'chain':chainid,'chunk':chunckid})
+        tmp['step'] = chunckid*niter+tmp['index']
+        for para in varnames: tmp[para] = np.array(trace[para][1:])
+        
+        if outname==flist[0]: trace_df = tmp 
+        else: trace_df = pd.concat([trace_df,tmp])
+    trace_df = trace_df[trace_df['step']>trace_df['step'].max()*warmup].sort_values(['step']).dropna().reset_index().drop(columns=['index','level_0'])
+    return trace_df
 
 # def LoadEnsemble(forwardpath,outpath,MODE,sitename,warmup=0.8,nsample=100):
 #     forwardname = forwardpath+MODE+sitename+'.pkl'

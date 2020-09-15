@@ -117,6 +117,31 @@ plotmap(degrad_c4,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
 
 # print((delta_c12>0).sum()/len(delta_c12))
 
+
+#%%
+def getr2(prefix):
+    nsites_per_id = 1000
+
+    for arrayid in range(int(len(SiteInfo)/nsites_per_id)+1):
+        fname = prefix+str(arrayid).zfill(3)+'.pkl'
+        if os.path.isfile(fname):
+           with open(fname,'rb') as f:
+               tmp  = pickle.load(f)
+        if arrayid==0:
+            ACC = tmp.copy()
+        else:
+            ACC = np.concatenate([ACC,tmp],axis=0)
+    
+    df_pft = pd.DataFrame(ACC[:,6:],columns=['r2_vod','r2_et','r2_sm','rmse_vod','rmse_et','rmse_sm'])
+    df_pft['row'] = df_para['row']; df_pft['col'] = df_para['col']
+    return df_pft
+
+df_gs = getr2(versionpath+'STATS_GS/GS_')
+plotmap(df_gs,'r2_sm',vmin=0,vmax=1)
+
+# plotmap(df_gs,'r2_et',vmin=0,vmax=1)
+
+
 #%%
 # plotmap(degrad_c4,'rmse_vod',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE, VOD, dry")
 # plotmap(degrad_c4,'rmse_et',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), ET, dry")
