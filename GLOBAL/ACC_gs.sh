@@ -3,7 +3,7 @@
 #SBATCH --job-name=gs
 #SBATCH --output=JobInfo/%x_%a.out
 #SBATCH --error=JobInfo/%x_%a.err
-#SBATCH --array=0-93
+#SBATCH --array=0-94
 #SBATCH --ntasks=1
 #SBATCH -p konings,owners,normal
 #SBATCH --time=00:15:00

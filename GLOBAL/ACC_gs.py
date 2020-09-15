@@ -16,7 +16,7 @@ from newfun import readCLM_test # newfun_full
 from newfun import fitVOD_RMSE,calVOD, dt, hour2day, hour2week
 from newfun import get_var_bounds,OB,CONST,CLAPP,ca
 from newfun import GetTrace
-from Utilities import nanOLS,nancorr,MovAvg,calRMSE
+from Utilities import nanOLS,nancorr,MovAvg,calRMSE, dailyAvg
 import time
 from scipy.stats import norm
 
@@ -29,7 +29,7 @@ parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 nsites_per_id = 1000
 
-# parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
+#parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 10#4672
 #nsites_per_id = 2
 
@@ -84,7 +84,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     
     
     trd = np.median(dLAI0)
-    gs_vod = (dLAI>trd)
+    gs_vod = ((dLAI>trd) & (np.repeat(dailyAvg(TEMP,8),2)[~discard_vod]>273))
     gs_sm = gs_vod[1::2]
     gs_et = (hour2week((np.repeat(dLAI0,4)>trd)*1,UNIT=1)>0.5)[~discard_et]
 
