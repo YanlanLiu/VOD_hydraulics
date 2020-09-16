@@ -111,7 +111,7 @@ plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
 # df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.1)].reset_index()).iloc[np.arange(0,20300,1000)]
 # plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
 # df_tmp.to_csv('pixels.csv')
-df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.5)].reset_index()).iloc[np.arange(0,12000,1000)]
+df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.5)].reset_index()).iloc[np.arange(0,12000,500)]
 plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
 df_tmp.to_csv('pixels_good.csv')
 
