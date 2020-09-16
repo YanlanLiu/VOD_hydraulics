@@ -57,6 +57,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     except:
         print("No trace")
         CVG.append(CVGnan)
+        continue
         
 
     paralist=varnames[:7]

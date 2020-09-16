@@ -24,6 +24,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.75)
 import os; os.environ['PROJ_LIB'] = '/Users/yanlan/opt/anaconda3/pkgs/proj4-5.2.0-h0a44026_1/share/proj/'
 from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 from Utilities import LatLon
 from matplotlib import cm
 
@@ -38,7 +40,7 @@ MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 Collection_ACC = np.zeros([len(SiteInfo),4])+np.nan
-Collection_PARA = np.zeros([len(SiteInfo),14])+np.nan
+Collection_PARA = np.zeros([len(SiteInfo),17])+np.nan
 # Collection_S = np.zeros([len(SiteInfo),14])+np.nan
 
 Collection_OBS = np.zeros([len(SiteInfo),9])+np.nan
@@ -155,14 +157,88 @@ plotmap(df_gs,'r2_sm',vmin=0,vmax=1)
 # plotmap(degrad_pft,'r2_et',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, ET")
 # plotmap(degrad_pft,'r2_sm',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, SM")
 
+dd = 2.8
+plotmap(degrad_c4,'rmse_vod',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE, VOD")
+plotmap(degrad_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE, ET")
+# plotmap(degrad_c4,'rmse_sm',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE, SM")
 
-plotmap(degrad_c4,'rmse_vod',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE, VOD")
-plotmap(degrad_c4,'rmse_et',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE, ET")
-plotmap(degrad_c4,'rmse_sm',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE, SM")
-#%%
+
+dd = 1
+plotmap(delta_c4,'rmse_vod',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE, VOD")
+plotmap(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE, ET")
+
+# plotmap(delta_c4,'rmse_vod',cmap='RdBu_r',vmin=-2,vmax=2,title="RMSE(hft)-RMSE(pft), VOD")
+# plotmap(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-.5,vmax=.5,title="RMSE(hft)-RMSE(pft), ET")
+
 # plotmap(degrad_pft,'rmse_vod',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, VOD")
 # plotmap(degrad_pft,'rmse_et',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, ET")
 # plotmap(degrad_pft,'rmse',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, SM")
+#%%
+def plotdegrade_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.4,drawmask=True):
+    heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+    heatmap1_data[578] = np.nan
+    fig, ax = plt.subplots(figsize=(13.2,5))
+    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
+    m.drawcoastlines()
+    m.drawcountries()
+    lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+    cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
+    cbar = m.colorbar(cs)
+       
+dd = 2.8
+plotdegrade_map(degrad_c4,'rmse_vod',cmap='RdBu_r',vmin=-dd,vmax=dd)
+plotdegrade_map(degrad_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd)
+
+#%%
+def plotdelta_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,bp=[0.1,0.2],borderpad=2.2,drawmask=True):
+    heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+    heatmap1_data[578] = np.nan
+    fig, ax = plt.subplots(figsize=(13.2,5))
+    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
+    m.drawcoastlines()
+    m.drawcountries()
+    lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+    cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
+    cbar = m.colorbar(cs)
+    if inset:
+        bins = [-np.inf,-bp[1],-bp[0],0,bp[0],bp[1],np.inf]
+        ['<-0.2','-0.2~-0.1','0.1~0.2','>0.2']
+        xticklabels = ['<'+str(-bp[1]),str(-bp[1])+'~'+str(-bp[0]),str(bp[0])+'~'+str(bp[1]),'>'+str(bp[1])]
+        axins = inset_axes(ax,  "18%", "30%" ,loc="lower left", borderpad=borderpad)
+        plt.setp(axins.get_xticklabels(), fontsize=16,rotation=30)
+        plt.setp(axins.get_yticklabels(), fontsize=16)
+        count,bins = np.histogram(df[varname],bins=bins)
+
+        cc = [sns.color_palette("RdBu_r",5)[i] for i in [0,1,3,4]]
+        for i,itm in enumerate([0,1,4,5]):
+            axins.bar(i,count[itm]/len(df),color=cc[i])
+        # plt.xticks(np.arange(4),xticklabels)
+        plt.xticks([])
+        # plt.xlabel(r'$\Delta RMSE$')
+        # plt.ylabel('fraction')
+
+        # sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
+        # sns.kdeplot(df_std[varname][df_std[varname]<3],cut=0,bw=0.025,color='k',legend=False)
+        # plt.xlim([-0.1,1.52])
+        # plt.xticks([0,0.5,1])
+        
+        xlim = axins.get_xlim()
+        ylim = axins.get_ylim()
+        # # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
+        axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/5,'Area fraction',fontsize=16)
+        # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
+        # axins.text(0,ylim[0]-(ylim[1]-ylim[0])/2,cbartitle,fontsize=16)
+     
+dd = 1.25; bp = [0.25, 0.75]#[-np.inf,-0.2,-0.1,0,0.1,0.2,np.inf]
+
+# colors = [sns.color_palete("RdBu_r",5)[i] for i in range(5)]
+# cmap = cmap_discretize(sns.color_palette("RdBu_r",5,as_cmap=True), n_colors=5)
+
+plotdelta_map(delta_c4,'rmse_vod',cmap="RdBu_r",vmin=-dd,vmax=dd,bp=bp)#,drawmask=False)
+
+plotdelta_map(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd,bp=bp)#,drawmask=False)
 
 
 #%%

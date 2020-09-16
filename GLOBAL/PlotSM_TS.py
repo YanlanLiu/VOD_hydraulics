@@ -23,7 +23,7 @@ def augTS(TS,discard):
     TS_full[~discard] = TS
     return TS_full
 
-for fid in range(10,21):
+for fid in range(0,10):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     with open(inpath+'Input_'+sitename+'.pkl','rb') as f: 
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = pickle.load(f)
@@ -56,3 +56,35 @@ for fid in range(10,21):
     plt.xlim(xlim)
 
 #%%
+for fid in range(0,10):
+    sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
+    with open(inpath+'Input_'+sitename+'.pkl','rb') as f: 
+        Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = pickle.load(f)
+    with open(forwardpath+'TS_VOD_SM_ET_'+sitename+'.pkl','rb') as f:
+        TS = pickle.load(f)
+    meanTS = [np.nanmean(itm,axis=0) for itm in TS]
+    VOD_hat,ET_hat,PSIL_hat,S1_hat = meanTS
+    plt.figure()
+    valid_sm = ~np.isnan(SOILM); SOILM_valid = SOILM[valid_sm]
+    bins = np.arange(0,1.02,0.01)
+    counts, bin_edges = np.histogram(SOILM_valid, bins=bins, normed=True)
+    cdf1 = np.cumsum(counts)/sum(counts)
+    plt.plot(bin_edges[:-1],cdf1,label='AMSRE')
+    
+    counts, bin_edges = np.histogram(S1_hat, bins=bins, normed=True)
+    cdf2 = np.cumsum(counts)/sum(counts)
+    plt.plot(bin_edges[:-1],cdf2,label='Matched')
+    plt.legend()
+    
+    # xlim=[300,800]
+    # plt.figure()
+    # plt.plot(augTS(SOILM,discard_vod[1::2]),label='AMSRE')
+    # plt.plot(augTS(S1_hat,discard_vod[1::2]),label='Matched')
+    # plt.legend()
+    # plt.xlim(xlim)
+    # plt.ylabel('Soil moisture')
+    
+    # plt.figure()
+    # plt.plot(SOILM,S1_hat,'ok')
+    
+    
