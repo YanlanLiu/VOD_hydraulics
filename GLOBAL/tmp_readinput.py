@@ -24,7 +24,7 @@ pixelpath = versionpath+'Pixels/Input/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
-SiteInfo = pd.read_csv('pixels.csv')
+SiteInfo = pd.read_csv('pixels_good.csv')
 
 for fid in range(len(SiteInfo)):
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])

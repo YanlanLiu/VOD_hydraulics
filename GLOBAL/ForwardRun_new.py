@@ -29,7 +29,7 @@ parentpath = '/scratch/users/yanlan/'
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID']) # 0-935
 #arrayid = 849
 nsites_per_id = 100
-warmup, nsample,thinning = (0.8,20,100)
+warmup, nsample,thinning = (0.8,200,100)
 
 #parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 #arrayid = 44#4672
@@ -71,8 +71,8 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     print(sitename)
     try:
         Forcings,VOD,SOILM,ET,dLAI,discard_vod,discard_et,idx = readCLM(inpath,sitename)
-        VOD[IsOutlier(VOD,multiplier=2)] = np.nan
-        SOILM[IsOutlier(SOILM,multiplier=2)] = np.nan
+        VOD[IsOutlier(VOD,multiplier=3)] = np.nan
+        SOILM[IsOutlier(SOILM,multiplier=3)] = np.nan
     except (FileNotFoundError,KeyError) as err:
         print(err)
         OBS_mean.append(OBSnan); OBS_std.append(OBSnan); OBS_N.append(OBSNnan)
@@ -237,7 +237,7 @@ for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInf
     cdf1 = np.cumsum(counts)/sum(counts)
         
     PREFIX = outpath+MODE+'_'+sitename+'_'
-    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(20)]
+    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(4) for chunckid in range(20)]
     print(PREFIX)
     try:
         trace = GetTrace(flist,0)

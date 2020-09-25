@@ -29,7 +29,7 @@ nsites_per_id = 1000
 #warmup, nsample,thinning = (0.8,2,40)
 
 
-numofchains = 3
+numofchains = 4
 versionpath = parentpath + 'Global_0817/'
 inpath = parentpath+ 'Input_Global/'
 outpath = versionpath +'Output/'
@@ -43,13 +43,13 @@ SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 #%%
 sample_length=int(5e3); step = int(1e3)
 
-CVG = []; CVGnan = np.array([np.nan for i in range(17)])
+CVG = []; CVGnan = np.array([np.nan for i in range(14+numofchains)])
 # for fid in range(10,11):
 for fid in range(arrayid*nsites_per_id,min((arrayid+1)*nsites_per_id,len(SiteInfo))):
     # fid = 10
     sitename = str(SiteInfo['row'].values[fid])+'_'+str(SiteInfo['col'].values[fid])
     print(sitename)
-    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(3) for chunckid in range(20)]
+    flist = [outpath+MODE+'_'+sitename+'_'+str(chainid).zfill(2)+'_'+str(chunckid).zfill(2)+'.pickle' for chainid in range(4) for chunckid in range(20)]
     try:
         trace = GetTrace0(flist,0)
         trace_s = trace.sort_values(by=['loglik']).reset_index().drop(columns=['index'])

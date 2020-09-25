@@ -30,7 +30,7 @@ import sys
 parentpath = '/scratch/users/yanlan/'
 baseid = int(sys.argv[1])
 arrayid = int(os.environ['SLURM_ARRAY_TASK_ID'])*94+baseid # 0-93
-samplenum = (15,2000)
+samplenum = (25,2000)
 
 # parentpath = '/scratch/users/yanlan/'
 #baseid = int(sys.argv[1])
@@ -50,7 +50,7 @@ outpath = versionpath+'Output/'
 MODE = 'VOD_SM_ET'
 
 fid = int(arrayid)
-chainid = 3
+chainid = 0
 
 SiteInfo = pd.read_csv('SiteInfo_globe_full.csv')
 if fid>=len(SiteInfo):
