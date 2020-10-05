@@ -33,8 +33,8 @@ parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 
 nsites_per_id = 100
 versionpath = parentpath + 'Global_0817/'
-statspath = versionpath+'STATS/'
-# statspath = versionpath+'STATS_bkp/'
+# statspath = versionpath+'STATS/'
+statspath = versionpath+'STATS_bkp/STATS/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
@@ -108,8 +108,11 @@ degrad_c4 = df_c4-df_full; degrad_c4['row']=df_para['row']; degrad_c4['col'] = d
 
 delta_c4 = df_c4-df_pft; delta_c4['row']=df_para['row']; delta_c4['col'] = df_para['col']
 
-plotmap(degrad_pft,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
-plotmap(degrad_c4,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
+print(degrad_pft.mean())
+print(delta_c4.mean())
+
+# plotmap(degrad_pft,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
+# plotmap(degrad_c4,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
 
 # #%%
 # plt.plot(np.sort(delta_c12['r2_vod']),np.arange(len(delta_c4))/len(delta_c4))
@@ -119,6 +122,59 @@ plotmap(degrad_c4,'r2_vod',cmap='Reds_r',vmin=-0.5,vmax=0)
 
 # print((delta_c12>0).sum()/len(delta_c12))
 
+
+#%%
+def plotdelta_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,bp=[0.1,0.2],borderpad=3,drawmask=True):
+    heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+    heatmap1_data[578] = np.nan
+    fig, ax = plt.subplots(figsize=(13.2,5))
+    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -80, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
+
+    m.drawcountries()
+    lcol = m.drawcoastlines()
+    segs = lcol.get_segments()
+    for i, seg in enumerate(segs):
+      # The segments are lists of ordered pairs in spherical (lon, lat), coordinates.
+      # We can filter out which ones correspond to Antarctica based on latitude using numpy.any()
+        if np.any(seg[:, 1] < -60):
+            segs.pop(i)
+    lcol.set_segments(segs)
+    
+
+    lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+    cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
+    cbar = m.colorbar(cs)
+    if inset:
+        bins = [-np.inf,-bp[1],-bp[0],bp[0],bp[1],np.inf]
+        xticklabels = ['<'+str(-bp[1]),'('+str(-bp[1])+','+str(-bp[0])+')','('+str(-bp[0])+','+str(bp[0])+')','('+str(bp[0])+','+str(bp[1])+')','>'+str(bp[1])]
+        # axins = inset_axes(ax, "15%", "20%" ,bbox_to_anchor=(-285,-100,600,300)) #-80
+        # axins = inset_axes(ax, "15%", "20%" ,bbox_to_anchor=(-360,-108,650,300)) -65
+        
+        axins = inset_axes(ax, "25%", "30%" ,bbox_to_anchor=(-140,-23,600,300)) #-80
+        plt.setp(axins.get_xticklabels(), fontsize=14,rotation=90)
+        plt.setp(axins.get_yticklabels(), fontsize=14)
+        count,bins = np.histogram(df[varname],bins=bins)
+
+        cc = [sns.color_palette("RdBu_r",5)[i] for i in [0,1,2,3,4]]
+        for i,itm in enumerate([0,1,2,3,4]):
+            axins.bar(i,count[itm]/len(df),color=cc[i],edgecolor='k')
+        plt.xticks(np.arange(5),xticklabels)
+        plt.ylim(0,0.5)
+        # plt.xticks([])
+
+
+dd = 1.25; bp = [0.1, 0.5]#[-np.inf,-0.2,-0.1,0,0.1,0.2,np.inf]
+
+plotdelta_map(delta_c4,'rmse_vod',cmap="RdBu_r",vmin=-dd,vmax=dd,bp=bp)#,drawmask=False)
+# plt.savefig('../Figures/Fig8a_drmse_vod.png',dpi=100,bbox_inches='tight')
+
+plotdelta_map(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd,bp=bp)#,drawmask=False)
+# plt.savefig('../Figures/Fig8b_drmse_et.png',dpi=100,bbox_inches='tight')
+
+
+print(sum(delta_c4['rmse_vod']<-0.5)/len(delta_c4['rmse_vod']))
+print(sum(delta_c4['rmse_et']<-0.1)/len(delta_c4['rmse_vod']))
 
 #%%
 def getr2(prefix):
@@ -173,6 +229,9 @@ plotmap(delta_c4,'rmse_et',cmap='RdBu_r',vmin=-dd,vmax=dd,title="RMSE(hft)-RMSE,
 # plotmap(degrad_pft,'rmse_vod',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, VOD")
 # plotmap(degrad_pft,'rmse_et',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, ET")
 # plotmap(degrad_pft,'rmse',cmap='RdBu',vmin=-.5,vmax=.5,title="R2(pft)-R2, SM")
+
+
+
 #%%
 def plotdegrade_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.4,drawmask=True):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
@@ -195,7 +254,7 @@ def plotdelta_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,b
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
     fig, ax = plt.subplots(figsize=(13.2,5))
-    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -80.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
     if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
     m.drawcoastlines()
     m.drawcountries()
@@ -224,17 +283,19 @@ def plotdelta_map(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,b
         # plt.xlim([-0.1,1.52])
         # plt.xticks([0,0.5,1])
         
-        xlim = axins.get_xlim()
-        ylim = axins.get_ylim()
+        # xlim = axins.get_xlim()
+        # ylim = axins.get_ylim()
         # # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
-        axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/5,'Area fraction',fontsize=16)
+        # axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/5,'Area fraction',fontsize=16)
         # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
         # axins.text(0,ylim[0]-(ylim[1]-ylim[0])/2,cbartitle,fontsize=16)
      
-dd = 1.25; bp = [0.25, 0.75]#[-np.inf,-0.2,-0.1,0,0.1,0.2,np.inf]
+# dd = 1.25; bp = [0.25, 0.75]#[-np.inf,-0.2,-0.1,0,0.1,0.2,np.inf]
 
 # colors = [sns.color_palete("RdBu_r",5)[i] for i in range(5)]
 # cmap = cmap_discretize(sns.color_palette("RdBu_r",5,as_cmap=True), n_colors=5)
+
+dd = 1.25; bp = [0.25, 0.75]#[-np.inf,-0.2,-0.1,0,0.1,0.2,np.inf]
 
 plotdelta_map(delta_c4,'rmse_vod',cmap="RdBu_r",vmin=-dd,vmax=dd,bp=bp)#,drawmask=False)
 

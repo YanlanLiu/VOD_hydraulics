@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Fri Sep 18 22:32:34 2020
+
+@author: yanlan
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Thu Aug 20 10:33:36 2020
 
 @author: yanlan
@@ -12,7 +20,6 @@ import pandas as pd
 import glob
 from newfun import GetTrace, get_var_bounds
 import pickle
-from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="ticks", color_codes=True,font_scale=1.75)
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -24,7 +31,7 @@ parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 nsites_per_id = 100
 versionpath = parentpath + 'Global_0817/'
 statspath = versionpath+'STATS/'
-# statspath = versionpath+'STATS_bkp/STATS/'
+# statspath = versionpath+'STATS_bkp/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
@@ -53,12 +60,13 @@ for arrayid in range(933):
             OBS_mean,OBS_std,OBS_N = pickle.load(f)            
         if OBS_mean.shape[1]>0:
             Collection_OBS[subrange,:] = OBS_mean
-            Collection_N[subrange,:] = OBS_N            
+            Collection_N[subrange,:] = OBS_N
+            
             
 
 #%%
 mycmap = sns.cubehelix_palette(rot=-.65, as_cmap=True)
-def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.1,drawmask=True,labelpad=-30,bw=None):
+def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.1,drawmask=True,sm = False):
     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
     heatmap1_data[578] = np.nan
     fig, ax = plt.subplots(figsize=(13.2,5))
@@ -73,103 +81,127 @@ def plotmap(df,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderp
     if inset:
         c1 = sns.cubehelix_palette(rot=-.65)[-2]
         axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=borderpad)
-        sns.kdeplot(df[varname],ax=axins,legend=False,color=c1,bw=bw)
-        axins.set_xlim(-0.1,1.1)
+        sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
+        # if sm:
+        #     tmp = df[varname][df['IGBP']<11].values
+        #     print(tmp)
+        #     sns.kdeplot(tmp,ax=axins,legend=False,color=c1,linestyle='--')
         xlim = axins.get_xlim()
         ylim = axins.get_ylim()
         # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
         axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
         # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
         axins.text(sum(xlim)/4,ylim[0]-(ylim[1]-ylim[0])/3,cbartitle,fontsize=18)
+        
+            
     else:
         # x,y = m(-165,-40)
         # plt.text(x,y,cbartitle)
-        cbar.set_label(cbartitle,rotation=360,labelpad=labelpad,y=1.15)
+        cbar.set_label(cbartitle,rotation=360,labelpad=-30,y=1.15)
     return 0
 
 # plotmap(df_acc,'r2_sm',cbartitle=r'$loglik_{VOD}$',vmin=0,vmax=1,inset=False)
 
-#%% Fig. 2
+#%%
 df_acc = pd.DataFrame(np.concatenate([Collection_ACC,Collection_N,Collection_PARA[:,:3]],axis=1),
                       columns=['r2_vod','r2_et','r2_sm','Geweke','N_vod','N_et','N_sm','ll_vod','ll_et','ll_sm'])
 df_acc['row'] = SiteInfo['row'];df_acc['col'] = SiteInfo['col']; df_acc['IGBP'] = SiteInfo['IGBP']
-
-tmp = df_acc['r2_sm'].values; tmp[tmp<0.08] = tmp[tmp<0.08]**0.85; df_acc['r2_sm'] = tmp
-
-df_acc.median()
-df_acc.quantile(.25)
-df_acc.quantile(.75)
-
-
+# df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)] = df_acc['r2_sm'][df_acc['N_sm']<df_acc['N_sm'].quantile(.30)]*2
 # plotmap(df_acc,'r2_vod',cbartitle=r'$R^2_{VOD}$')
-# plt.savefig('../Figures/Fig2a_r2vod_tst.png',dpi=100,bbox_inches='tight')
+# plt.savefig('../Figures/Fig2a_r2vod.png',dpi=100,bbox_inches='tight')
+
+
 
 # plotmap(df_acc,'r2_et',cbartitle=r'$R^2_{ET}$')
-# plt.savefig('../Figures/Fig2b_r2et_tst.png',dpi=100,bbox_inches='tight')
+# plt.savefig('../Figures/Fig2b_r2et.png',dpi=100,bbox_inches='tight')
 
-# plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$',bw=0.03)#,drawmask=False)
-# plt.savefig('../Figures/Fig2c_r2sm_tst.png',dpi=100,bbox_inches='tight')
+# plotmap(df_acc,'r2_sm',cbartitle=r'$R^2_{SM}$')
+# plt.savefig('../Figures/Fig2c_r2sm.png',dpi=100,bbox_inches='tight')
+
+# %%
+# df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.1)].reset_index()).iloc[np.arange(0,20300,1000)]
+# plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
+# df_tmp.to_csv('pixels.csv')
+df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.5)].reset_index()).iloc[np.arange(0,12000,500)]
+plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
+df_tmp.to_csv('pixels_good.csv')
+
+# df_acc['ll_vod'] = df_acc['ll_vod']+0.1
+# plotmap(df_acc,'ll_vod',cbartitle=r'$loglik_{VOD}$',vmin=-1,vmax=2,inset=False)
+# plotmap(df_acc,'ll_et',cbartitle=r'$loglik_{ET}$',vmin=0,vmax=1,inset=False)
+# plotmap(df_acc,'ll_sm',cbartitle=r'$loglik_{SM}$',vmin=0,vmax=1,inset=False)
+
+
+# from scipy.stats import norm
+# a = np.random.normal(0,1,100)
+# print(np.nanmean(norm.logpdf(a,np.zeros([100,]),1)))
+
+# plotmap(df_acc[(df_acc['IGBP']<11)],'r2_sm',cbartitle=r'$R^2_{SM}$')
+# plt.figure()
+# sns.kdeplot(df_acc['r2_vod'])
+# sns.kdeplot(df_acc['r2_et'])
+# sns.kdeplot(df_acc['r2_sm'])
+# plt.xlabel('R2')
+# plt.ylabel('pdf')
 
 #%%
-pftnames = ['ENF','EBF','DNF','DBF','MF','CSH','OSH','WSV','SVA','GRA','NVM','CRO']
-cmap0 = colors.ListedColormap(['darkgreen','limegreen','chocolate','sandybrown','gold',
-                               'olive','darkkhaki','turquoise','lightseagreen','lightsteelblue',
-                               'royalblue','darkblue']) # best)
-
-df_acc['IGBP1'] = np.array(df_acc['IGBP']); df_acc['IGBP1'][df_acc['IGBP1']==14] = 11
-heatmap1_data = pd.pivot_table(df_acc, values='IGBP1', index='row', columns='col')
-heatmap1_data[578] = np.nan
-plt.figure(figsize=(13.2,5))
-m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
-m.drawcoastlines()
-m.drawcountries()
-m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
-lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
-cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap0,vmin=0.5,vmax=12.5,shading='flat')
-cbar = m.colorbar(cs,ticks=np.arange(1,13))
-cbar.ax.set_yticklabels(pftnames)
-# cbar.set_label(varname,rotation=360,labelpad=15)
-# plt.show()
-# plt.savefig('../Figures/FigS4_PFT.png',dpi=100,bbox_inches='tight')
-
-# plotmap(df_acc,'IGBP1',cbartitle='PFT',cmap=cmap1,vmin=0,vmax=12,inset=False,drawmask=False)
-
-#%% Fig. 3
 df_para = pd.DataFrame(Collection_PARA[:,3:],columns=varnames+['a','b','c'])
 df_para['row'] = SiteInfo['row'];df_para['col'] = SiteInfo['col']; df_para['IGBP'] = SiteInfo['IGBP']
 df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
 
-       
-# plotmap(df_para,'g1',vmin=0,vmax=6.5,cmap='RdYlBu_r',cbartitle=r'$g_{1}$ (kPa$^{1/2})$',labelpad=-40,inset=False)#,drawmask=False)
-# plt.savefig('../Figures/Fig3a_g1.png',dpi=100,bbox_inches='tight')
 
-# plotmap(df_para,'psi50X',vmin=-6.5,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,x}$ (MPa)',labelpad=-50,inset=False)#,drawmask=False)
-# plt.savefig('../Figures/Fig3b_p50.png',dpi=100,bbox_inches='tight')
-
-# plotmap(df_para,'C',vmin=0,vmax=24,cmap='RdYlBu_r',cbartitle=r'$C$ (mm MPa$^{-1}$)',inset=False,labelpad=-70)#,drawmask=False)
-# plt.savefig('../Figures/FigS2a_C.png',dpi=100,bbox_inches='tight')
-
-# plotmap(df_para,'lpx',vmin=0,vmax=-4,cmap='RdYlBu',cbartitle=r'$\psi_{50,x}$ (MPa)',inset=False,labelpad=-50)#,drawmask=False)
-# plt.savefig('../Figures/FigS2b_p50s.png',dpi=100,bbox_inches='tight')
-
-# plotmap(df_para,'gpmax',vmin=0,vmax=9,cmap='RdYlBu_r',cbartitle=r'$g_{p,max}$ (mm hr$^{-1}$ MPa$^{-1}$)',inset=False,labelpad=-110)#,drawmask=False)
-# plt.savefig('../Figures/FigS2c_gpmax.png',dpi=100,bbox_inches='tight')
-
-#%% Fig. 4
-df_std = pd.DataFrame(Collection_STD/np.abs(Collection_PARA[:,3:-3]),columns=varnames)
+#%%
+df_std = pd.DataFrame(Collection_STD/Collection_PARA[:,3:-3],columns=varnames)
 df_std['row'] = SiteInfo['row'];df_std['col'] = SiteInfo['col']; df_std['IGBP'] = SiteInfo['IGBP']
+# df_min['psi50X'][df_std['psi50X'].min()]
+# plotmap(df_std,'psi50X',vmin=0,vmax=1,cmap='RdYlBu_r',cbartitle=r'$\psi_{50,x}$',inset=False,drawmask=False)
+# plotmap(df_std,'g1',vmin=0,vmax=1,cmap='RdYlBu_r',cbartitle=r'$g_1$',inset=False)#,drawmask=False)
 
-plt.figure(figsize=(4,4))
-sns.kdeplot(df_std['g1'][df_std['g1']<3],cut=0,bw=0.025,color='g',label='$g_1$')
-sns.kdeplot(df_std['psi50X'][df_std['psi50X']<3],cut=0,bw=0.025,color='b',label='$\psi_{50,x}$')
-plt.xlim([-0.1,1.32])
-plt.xlabel('Coefficient of variation')
-plt.ylabel('pdf')
+# sns.kdeplot(df_std['g1'][df_std['g1']<3],cut=0,bw=0.025)
+# sns.kdeplot(df_std['psi50X'][df_std['psi50X']<3],cut=0,bw=0.025)
+# plt.xlim([-0.1,1.72])
 
-# plt.savefig('../Figures/Fig4_cv.eps',dpi=300,bbox_inches='tight')
-# plt.savefig('../Figures/Fig4_cv.png',dpi=300,bbox_inches='tight')
 
+#%%
+def plotPARA_map(df,df_std,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.4,drawmask=True):
+    heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
+    heatmap1_data[578] = np.nan
+    fig, ax = plt.subplots(figsize=(13.2,5))
+    m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
+    if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
+    m.drawcoastlines()
+    m.drawcountries()
+    lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
+    cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
+    cbar = m.colorbar(cs)
+    # cbar.set_label(cbartitle,rotation=360,labelpad=23)
+    if inset:
+        # c1 = sns.cubehelix_palette(rot=-.65)[-2]
+        axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=borderpad)
+        plt.setp(axins.get_xticklabels(), fontsize=16)
+        plt.setp(axins.get_yticklabels(), fontsize=16)
+        # sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
+        sns.kdeplot(df_std[varname][df_std[varname]<3],cut=0,bw=0.025,color='k',legend=False)
+        plt.xlim([-0.1,1.52])
+        plt.xticks([0,0.5,1])
+        
+        xlim = axins.get_xlim()
+        ylim = axins.get_ylim()
+        # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
+        axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
+        # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
+        axins.text(0,ylim[0]-(ylim[1]-ylim[0])/2,cbartitle,fontsize=16)
+        
+plotPARA_map(df_para,df_std,'psi50X',vmin=-6.5,vmax=-0.1,cmap='RdYlBu',cbartitle=r'CV. of $\psi_{50,x}$')#,drawmask=False)
+plotPARA_map(df_para,df_std,'g1',vmin=0,vmax=6.5,cmap='RdYlBu_r',cbartitle=r'CV. of $g_{1}$')#,drawmask=False)
+
+#%%
+# df_std = pd.DataFrame(Collection_STD,columns=varnames)
+# df_std['row'] = SiteInfo['row'];df_std['col'] = SiteInfo['col']; df_std['IGBP'] = SiteInfo['IGBP']
+
+# plt.scatter(df_para['g1'],df_std['g1'])
+#%%
 # cmap0 = 'RdYlBu_r'
 # plotmap(df_para,'psi50X',vmin=-6.5,vmax=-0.1,cmap='RdYlBu',cbartitle=r'$\psi_{50,x}$',inset=False)
 # plotmap(df_para,'g1',vmin=0,vmax=6.5,cmap=cmap0,cbartitle=r'$g_1$',inset=False)
@@ -178,6 +210,12 @@ plt.ylabel('pdf')
 # plotmap(df_para,'gpmax',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'$g_{p,max}$',inset=False)
 # plotmap(df_para,'bexp',vmin=0,vmax=10,cmap=cmap0,cbartitle=r'soil$_b$',inset=False)
 # plotmap(df_para,'bc',vmin=0,vmax=.8,cmap=cmap0,cbartitle=r'soil$_{bc}$',inset=False)
+
+#%%
+# plt.plot(df_para['psi50X'],df_para['g1'],'ok')
+# from Utilities import nancorr
+# for v in varnames+['a','b','c']:
+#     print(v,nancorr(df_para['psi50X'].values,df_para[v].values))
 
 
 
@@ -205,44 +243,12 @@ P50mean = [np.nanmedian(df_para['psi50X'][IGBPnames==itm]) for itm in IGBP_try]
 P50_low = [np.nanpercentile(df_para['psi50X'][IGBPnames==itm],25) for itm in IGBP_try]
 P50_high = [np.nanpercentile(df_para['psi50X'][IGBPnames==itm],75) for itm in IGBP_try]
 
-
-plt.figure(figsize=(8,8))
-plt.subplots_adjust(hspace=0.3)
-dd = 0.3
-
-c1 = sns.color_palette("BrBG_r", 5)[1]
-c2 = sns.color_palette("BrBG_r", 5)[0]
-
-IGBP_lin = ['ENF','DBF','SHB','GRA','CRO']
-Lin_mean = np.array([2.35,3.97,4.22,4.5,5.79])
-Lin_std = np.array([0.25,0.06,0.72,0.37,0.64])
-G1mean = [np.nanmean(df_para['g1'][IGBPnames==itm]) for itm in IGBP_lin]
-G1_low = [np.nanpercentile(df_para['g1'][IGBPnames==itm],25) for itm in IGBP_lin]
-G1_high = [np.nanpercentile(df_para['g1'][IGBPnames==itm],75) for itm in IGBP_lin]
-
-
-plt.subplot(211)
-for i in range(len(IGBP_lin)):
-    if i==0:
-        plt.bar(i-dd/2,G1mean[i],color=c1,width=dd,label='Estimated')
-        plt.bar(i+dd/2,Lin_mean[i],color=c2,width=dd,label=r'Lin et al.')
-    else:
-        plt.bar(i-dd/2,G1mean[i],color=c1,width=dd)
-        plt.bar(i+dd/2,Lin_mean[i],color=c2,width=dd)
-    plt.plot([i-dd/2,i-dd/2],[G1_low[i],G1_high[i]],'-k')
-    plt.plot([i+dd/2,i+dd/2],Lin_mean[i]+Lin_std[i]*np.array([-1,1]),'-k')
-    
-    
-plt.xticks(np.arange(len(IGBP_lin)),IGBP_lin)
-plt.ylim([0,7])
-plt.ylabel(r'$g_1$ (kPa$^{1/2}$)')
-# plt.legend(bbox_to_anchor=(1.05,1.05))
-plt.legend()
-plt.text(-1.23,7,'a',fontsize=28)
-
+#%%
 c1 = sns.color_palette("Paired")[0]
 c2 = sns.color_palette("Paired")[1]
-plt.subplot(212)
+plt.figure(figsize=(8,8))
+dd = 0.3
+plt.subplot(211)
 for i in range(len(IGBP_try)):
     if i==0:
         plt.bar(i-dd/2,P50mean[i],color=c1,width=dd,label='Estimated')
@@ -259,11 +265,36 @@ for i in range(len(IGBP_try)):
 plt.xticks([])
 plt.ylabel('$\psi_{50,x}$ (MPa)')
 plt.xticks(np.arange(len(IGBP_try)),IGBP_try)
-# plt.legend(bbox_to_anchor=(1.05,1.05))
-plt.legend()
-plt.text(-1.23,0,'b',fontsize=28)
-# plt.savefig('../Figures/Fig5_g1p50_pft.png',dpi=300,bbox_inches='tight')
+plt.legend(bbox_to_anchor=(1.05,1.05))
 
+# c1 = sns.color_palette("Paired")[2]
+# c2 = sns.color_palette("Paired")[3]
+c1 = sns.color_palette("BrBG_r", 5)[1]
+c2 = sns.color_palette("BrBG_r", 5)[0]
+
+IGBP_lin = ['ENF','DBF','SHB','GRA','CRO']
+Lin_mean = np.array([2.35,3.97,4.22,4.5,5.79])
+Lin_std = np.array([0.25,0.06,0.72,0.37,0.64])
+G1mean = [np.nanmean(df_para['g1'][IGBPnames==itm]) for itm in IGBP_lin]
+G1_low = [np.nanpercentile(df_para['g1'][IGBPnames==itm],25) for itm in IGBP_lin]
+G1_high = [np.nanpercentile(df_para['g1'][IGBPnames==itm],75) for itm in IGBP_lin]
+
+plt.subplot(212)
+for i in range(len(IGBP_lin)):
+    if i==0:
+        plt.bar(i-dd/2,G1mean[i],color=c1,width=dd,label='Estimated')
+        plt.bar(i+dd/2,Lin_mean[i],color=c2,width=dd,label=r'Lin et al.')
+    else:
+        plt.bar(i-dd/2,G1mean[i],color=c1,width=dd)
+        plt.bar(i+dd/2,Lin_mean[i],color=c2,width=dd)
+    plt.plot([i-dd/2,i-dd/2],[G1_low[i],G1_high[i]],'-k')
+    plt.plot([i+dd/2,i+dd/2],Lin_mean[i]+Lin_std[i]*np.array([-1,1]),'-k')
+    
+    
+plt.xticks(np.arange(len(IGBP_lin)),IGBP_lin,rotation=30)
+plt.ylim([0,7])
+plt.ylabel(r'$g_1$')
+plt.legend(bbox_to_anchor=(1.05,1.05))
 
 #%%
 import netCDF4
@@ -301,12 +332,10 @@ fia['P50_hat'] = EST[:,0]; fia['Nhat'] = EST[:,1]; fia['P50_std'] = EST[:,2];fia
 igbpfilter = [itm not in ['CRO','GRA'] for itm in fia['IGBPnames']]
 fia = fia[(fia['Nhat']>4) & igbpfilter]
 
-
-fig = plt.figure(figsize=(6,6))
-# ax = plt.subplot(111)
-
-# xlim = [-9.9,-0.4]
-xlim = [-9.4,-0.4]
+#%%
+plt.figure(figsize=(6,6))
+xlim = [-9.5,-0.4]
+# sns.scatterplot(x="P50", y="psi50X",s=np.log(nplots+1)*100,alpha=0.5, hue="IGBPnames",data=new_df)
 
 fia_s = fia[fia['IGBPnames']=='ENF']
 for igbp in ['EBF','DBF','MF']:
@@ -318,26 +347,15 @@ fia_s['Land cover'] = fia_s['IGBPnames']
 fia_s = fia_s.reset_index()
 nplots = fia_s['nplots']
 
-# sc = sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='colorblind',ax=ax)
-sc = sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='colorblind')
-plt.legend(bbox_to_anchor=(1.05,1.03),title='')
-
-# handles, labels = ax.get_legend_handles_labels()
-# ax.legend_.remove()
-# l = sc.legend(handles[1:],labels[1:], ncol=1,loc=3)
-# # ax.legend(handles=handles[1:], labels=labels[1:])
-
-# frame = l.get_frame()
-# frame.set_alpha(1)
-# frame.set_edgecolor('k')
-
-# plt.plot([-7,-0.4],[-7,-0.4],'--k');plt.xlim(xlim);plt.ylim(xlim)
-plt.plot(xlim,xlim,'--k');plt.xlim(xlim);plt.ylim(xlim)
-
+# for 
+sns.scatterplot(x="P50", y="P50_hat",s=nplots*0.8,alpha=0.5, hue="Land cover",data=fia_s,palette='colorblind')
+# for i in range(len(fia_s)):
+#     plt.plot(fia_s['P50'].iloc[i]*np.array([1,1]),fia_s['P50_hat'].iloc[i]+fia_s['P50_std'].iloc[i]*np.array([-1,1]),'-',color='grey',alpha=0.5)
+plt.legend(bbox_to_anchor=(1.05,1.05),title='')
+plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 plt.xlabel(r'FIA-based $\psi_{50,x}$ (MPa)')
 plt.ylabel(r'Estimated $\psi_{50,x}$ (MPa)')
 
-# plt.savefig('../Figures/Fig6_p50_fia.png',dpii=300,bbox_inches='tight')
 
 #%%
 # #%%
@@ -372,59 +390,10 @@ plt.ylabel(r'Estimated $\psi_{50,x}$ (MPa)')
 # plt.legend(bbox_to_anchor=(1.75,1.05))
 # plt.plot(xlim,xlim,'-k');plt.xlim(xlim);plt.ylim(xlim)
 
-
-# %%
-# df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.1)].reset_index()).iloc[np.arange(0,20300,1000)]
-# plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
-# df_tmp.to_csv('pixels.csv')
-# df_tmp = (df_acc[(df_acc['IGBP']<11) & (df_acc['r2_sm']>0.5)].reset_index()).iloc[np.arange(0,12000,500)]
-# plotmap(df_tmp,'r2_sm',cbartitle=r'$R^2_{SM}$',drawmask=False)
-# df_tmp.to_csv('pixels_good.csv')
-
-# df_acc['ll_vod'] = df_acc['ll_vod']+0.1
-# plotmap(df_acc,'ll_vod',cbartitle=r'$loglik_{VOD}$',vmin=-1,vmax=2,inset=False)
-# plotmap(df_acc,'ll_et',cbartitle=r'$loglik_{ET}$',vmin=0,vmax=1,inset=False)
-# plotmap(df_acc,'ll_sm',cbartitle=r'$loglik_{SM}$',vmin=0,vmax=1,inset=False)
-
-
-# from scipy.stats import norm
-# a = np.random.normal(0,1,100)
-# print(np.nanmean(norm.logpdf(a,np.zeros([100,]),1)))
-
-# plotmap(df_acc[(df_acc['IGBP']<11)],'r2_sm',cbartitle=r'$R^2_{SM}$')
-# plt.figure()
-# sns.kdeplot(df_acc['r2_vod'])
-# sns.kdeplot(df_acc['r2_et'])
-# sns.kdeplot(df_acc['r2_sm'])
-# plt.xlabel('R2')
-# plt.ylabel('pdf')
-
-#%%
-# def plotPARA_map(df,df_std,varname,vmin=0,vmax=1,cmap=mycmap,cbartitle='',inset=True,borderpad=2.4,drawmask=True):
-#     heatmap1_data = pd.pivot_table(df, values=varname, index='row', columns='col')
-#     heatmap1_data[578] = np.nan
-#     fig, ax = plt.subplots(figsize=(13.2,5))
-#     m = Basemap(llcrnrlon = -180.0, llcrnrlat = -60.0, urcrnrlon = 180.0, urcrnrlat = 90.0)
-#     if drawmask: m.drawlsmask(land_color=(0.87,0.87,0.87),lakes=True)
-#     m.drawcoastlines()
-#     m.drawcountries()
-#     lat,lon = LatLon(np.array(heatmap1_data.index),np.array(list(heatmap1_data)))
-#     cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap,vmin=vmin,vmax=vmax,shading='flat')
-#     cbar = m.colorbar(cs)
-#     # cbar.set_label(cbartitle,rotation=360,labelpad=23)
-#     if inset:
-#         # c1 = sns.cubehelix_palette(rot=-.65)[-2]
-#         axins = inset_axes(ax,  "15%", "30%" ,loc="lower left", borderpad=borderpad)
-#         plt.setp(axins.get_xticklabels(), fontsize=16)
-#         plt.setp(axins.get_yticklabels(), fontsize=16)
-#         # sns.kdeplot(df[varname],ax=axins,legend=False,color=c1)
-#         sns.kdeplot(df_std[varname][df_std[varname]<3],cut=0,bw=0.025,color='k',legend=False)
-#         plt.xlim([-0.1,1.52])
-#         plt.xticks([0,0.5,1])
-        
-#         xlim = axins.get_xlim()
-#         ylim = axins.get_ylim()
-#         # axins.plot(df[varname].median()*np.array([1,1]),[0,ylim[1]],'--',color=c1)
-#         axins.text(xlim[0]-(xlim[1]-xlim[0])/4,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
-#         # axins.text(-0.5,ylim[1]+(ylim[1]-ylim[0])/20,'pdf',fontsize=18)
-#         axins.text(0,ylim[0]-(ylim[1]-ylim[0])/2,cbartitle,fontsize=16)
+#%% 
+for i in range(10):
+    print(i)
+    if i==5:
+        print('bp')
+    else:
+        continue

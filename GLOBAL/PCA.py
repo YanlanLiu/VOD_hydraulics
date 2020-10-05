@@ -28,7 +28,6 @@ parentpath = '/Volumes/ELEMENTS/VOD_hydraulics/'
 nsites_per_id = 100
 versionpath = parentpath + 'Global_0817/'
 statspath = versionpath+'STATS/'
-# statspath = versionpath+'STATS_bkp/'
 
 MODE = 'VOD_SM_ET'
 varnames, bounds = get_var_bounds(MODE)
@@ -81,18 +80,22 @@ df_para['Root depth'] = SiteInfo['Root depth']; df_para['Soil texture'] = SiteIn
 df_para['Vcmax25'] = SiteInfo['Vcmax25']
 df_para['psi50X'] = -df_para['psi50X']
 df_para['lpx'] = df_para['lpx']*df_para['psi50X']
+# df_para['lpx'] = np.log(df_para['lpx']*df_para['psi50X'])
+# df_para['psi50X'] = np.log(df_para['psi50X'])
+
+
+# df_para['lpx'][df_para['lpx']>-0.1] = -0.1
 # plotmap(df_para,'psi50X',vmin=-7,vmax=0,cmap='RdYlBu')
 df_para = df_para.dropna()
 # plotmap(df_para,'DI',vmin=0,vmax=5)
 
 Y = np.array(df_para[varnames[:5]])
-# Y[:,2] = -Y[:,2] # P50X
-# Y[:,1] = Y[:,1]*Y[:,2] # P50S
 Ymean = np.nanmean(Y,axis=0)
 Ystd = np.nanstd(Y,axis=0)
 Ymin = np.nanpercentile(Y,5,axis=0)
 Ymax = np.nanpercentile(Y,95,axis=0)
 Yc = (Y-Ymean)/Ystd
+# Yc = (Y-Ymin)/(Ymax-Ymin)
     
 #%% K-means clustering
 
@@ -126,19 +129,25 @@ def fit_kmeans(Yc,n_clusters):
 
 #%% A figure showing decay of BIC and Vw/Vb as n_clusters increases
 
-# SVe = []; SVb = []; SVw = []; SBIC = []
-# for n_clusters in range(3,20):
-#     print(n_clusters)
-#     klabel, kcenter, Vall,Ve,Vb,Vw, BIC = fit_kmeans(Yc,n_clusters)
-#     SVe.append(Ve); SVb.append(Vb); SVw.append(Vw); SBIC.append(BIC)
-# plt.figure()
-# plt.plot(np.arange(3,20),np.array(SVe)/Vall,'-b',label='Var(explained)/Var(all)')
-# # plt.plot(12,Vb_pft/Vall,'^b')
-# plt.plot(np.arange(3,20),np.array(SVw)/np.array(SVb),'-r',label='Var(within)/Var(across)')
+SVe = []; SVb = []; SVw = []; SBIC = []
+for n_clusters in range(3,20):
+    print(n_clusters)
+    klabel, kcenter, Vall,Ve,Vb,Vw, BIC = fit_kmeans(Yc,n_clusters)
+    SVe.append(Ve); SVb.append(Vb); SVw.append(Vw); SBIC.append(BIC)
+    
+#%%
+plt.figure(figsize=(6,4))
+plt.plot(np.arange(3,20),np.array(SVe)/Vall,'-^b',label='Var(explained)/Var(all)')
+# plt.plot(12,Vb_pft/Vall,'^b')
+plt.plot(np.arange(3,20),np.array(SVw)/np.array(SVb),'-^r',label='Var(within)/Var(across)')
 # plt.plot([12,12],[0.2,1],'--k',label='# of PFT')
-# plt.legend(bbox_to_anchor=[1.05,1.05])
-# plt.xlabel('# of clusters')
-# # print(Ve_pft/Vall,Vw_pft/Vb_pft)
+# plt.legend(bbox_to_anchor=[1.25,1.05])
+plt.legend()
+plt.xlabel('Number of clusters of clusters')
+# plt.savefig('../Figures/FigS3_nclusters.png',dpi=300,bbox_inches='tight')
+# plt.savefig('../Figures/FigS3_nclusters.eps',dpi=300,bbox_inches='tight')
+
+# print(Ve_pft/Vall,Vw_pft/Vb_pft)
 
 # plt.figure()
 # plt.plot(np.arange(3,20),SBIC)
@@ -186,16 +195,17 @@ cc = [sns.color_palette("Paired")[i] for i in [6,11,2,3,8,9]] # best
 # cc[1]= sns.color_palette("Blues", 5)[-3]
 # cc[5] = sns.color_palette("Set2")[5]
 # cc = [sns.color_palette("Set2")[i] for i in range(0,6)]
-dd = 0.15
+dd = 0.12
 vnames = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$']
 clusternames = ['C'+str(i) for i in range(1,n_clusters+1)]
 
-kcenter_rescale = np.copy(kcenter_s)
-# for vid in range(len(vnames)):
-#     for cid in range(len(clusternames)):
-#         kcenter_rescale[cid,vid] = sum(Yc[:,vid]<kcenter_s[cid,vid])/len(Yc)
-    # kcenter_rescale[:,vid] = ((kcenter_s[:,vid]*Ystd[vid]+Ymean[vid])-Ymin[vid])/(Ymax[vid]-Ymin[vid])
 
+kcenter_rescale = np.copy(kcenter_s)
+for vid in range(len(vnames)):
+#     # for cid in range(len(clusternames)):
+#     #     kcenter_rescale[cid,vid] = sum(Yc[:,vid]<kcenter_s[cid,vid])/len(Yc)
+    kcenter_rescale[:,vid] = ((kcenter_s[:,vid]*Ystd[vid]+Ymean[vid])-Ymin[vid])/(Ymax[vid]-Ymin[vid])
+kcenter_rescale[:,1] = kcenter_rescale[:,1]*kcenter_rescale[:,2]
 
 # kcenter_rescale[kcenter_rescale<0] = 0.01
 plt.figure(figsize=(10,5))
@@ -204,10 +214,11 @@ plt.figure(figsize=(10,5))
 # plt.bar(1,2,color='w',alpha=1,label=' ')
 for cid in range(n_clusters):
     plt.bar(np.arange(len(vnames))+(cid-2.5)*dd,kcenter_rescale[cid,:],width=dd,color=cc[cid],label=clusternames[cid])
-plt.legend(ncol=2,bbox_to_anchor=(1.05,1.05))
+plt.legend(ncol=1,bbox_to_anchor=(1.03,1.03),title='Cluster')
 plt.xticks(np.arange(len(vnames)),vnames)
 plt.ylabel('Normalized value')
 # plt.ylim([-3.5,2])
+# plt.savefig('../Figures/Fig7a_cluster.png',dpi=300,bbox_inches='tight')
 
 
 # %%
@@ -228,27 +239,31 @@ cs = m.pcolormesh(lon,lat,heatmap1_data,cmap=cmap0,vmin=-0.5,vmax=5.5,shading='f
 cbar = m.colorbar(cs)
 cbar.ax.set_yticklabels(clusternames)
 # cbar.set_label(varname,rotation=360,labelpad=15)
-plt.show()
+# plt.show()
+# plt.savefig('../Figures/Fig7b_clustermap.png',dpi=100,bbox_inches='tight')
+
 
 #%% Plot distribution of DI and bexp within each cluster
 plt.figure(figsize=(10,5))
 tmp = df_para[df_para<7]
 sns.boxplot(x='clusters_6',y='DI',data=tmp,color='b',width=0.4,fliersize=0)
-plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+plt.xticks(np.arange(n_clusters),['C'+str(i+1) for i in range(n_clusters)])
 # plt.ylim([0,6.5])
 plt.xlabel('Cluster')
-# plt.ylabel('Dryness index')
+plt.ylabel('Dryness index')
+# plt.savefig('../Figures/FigS4_DI.png',dpi=300,bbox_inches='tight')
+# plt.savefig('../Figures/FigS4_DI.eps',dpi=300,bbox_inches='tight')
 
 
-plt.figure(figsize=(10,5))
-# tmp = df_para[df_para<7]
-sns.boxplot(x='clusters_6',y='bc',data=df_para,color='b',width=0.4,fliersize=0)
-# sns.violinplot(x='clusters_6',y='IGBP',data=df_para,color='b',width=0.4,fliersize=0)
+# plt.figure(figsize=(10,5))
+# # tmp = df_para[df_para<7]
+# sns.boxplot(x='clusters_6',y='bc',data=df_para,color='b',width=0.4,fliersize=0)
+# # sns.violinplot(x='clusters_6',y='IGBP',data=df_para,color='b',width=0.4,fliersize=0)
 
-plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
-# plt.ylim([0,6.5])
-plt.xlabel('Cluster')
-# plt.ylabel('Dryness index')
+# plt.xticks(np.arange(n_clusters),['C'+str(i) for i in range(n_clusters)])
+# # plt.ylim([0,6.5])
+# plt.xlabel('Cluster')
+# # plt.ylabel('Dryness index')
 
 #%%
 # plt.plot(df_para['psi50X'],df_para['g1'],'ok')
@@ -257,16 +272,36 @@ plt.xlabel('Cluster')
 #     r = nancorr(df_para['g1'].values,df_para[v].values)
 #     print(v+f", r = {r:.2f}")
 
-A = df_para[varnames[:-4]+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI','DI']]
-vnames = list(A)
+# A = df_para[varnames[:-4]+['a','b','c']+['VOD','ET','SOILM','RNET','TEMP','P','VPD','PET','LAI','DI']]
+A = df_para[varnames[:-4]+['RNET','TEMP','P','VPD','PET','DI']]
+# vnames = list(A)
+trait_names = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$']#,r'soil$_{b}$',r'soil$_{bc}$']
+clm_names = [r'soil$_{b}$',r'soil$_{bc}$','Rnet','Temp','P','VPD','PET','DI']
+
 A = (A-np.nanmean(A,axis=0))/np.nanstd(A,axis=0); A = A.values
 SS = np.dot(A.T,A)/A.shape[0]
-#%%
-plt.figure(figsize=(10,10))
-plt.imshow(SS,cmap='RdBu_r');plt.colorbar();plt.clim(-1,1)
-plt.xticks(np.arange(len(vnames)),vnames,rotation=90)
-plt.yticks(np.arange(len(vnames)),vnames)
+
+plt.figure(figsize=(10,5))
+plt.imshow(SS[:5,:],cmap='RdBu_r');plt.clim(-1,1);plt.colorbar();
+plt.xticks(np.arange(len(trait_names)+len(clm_names)),trait_names+clm_names,rotation=90)
+plt.yticks(np.arange(len(trait_names)),trait_names)
 plt.title('Correlation')
+plt.savefig('../Figures/FigS6_corr.png',dpi=300,bbox_inches='tight')
+
+
+#%%
+A = df_para[varnames[:-4]+['RNET','TEMP','P','VPD','PET','DI']]
+# vnames = [r'$g_1$',r'$\psi_{50,s}$',r'$\psi_{50,x}$',r'$g_{p,max}$',r'$C$',r'soil$_{b}$',r'soil$_{bc}$']
+A = (A-np.nanmean(A,axis=0))/np.nanstd(A,axis=0); A = A.values
+SS = np.dot(A.T,A)/A.shape[0]
+
+plt.subplot(122)
+plt.imshow(SS[:5,6:],cmap='RdBu_r');plt.clim(-0.82,0.82) # plt.colorbar();
+
+plt.yticks(np.arange(len(trait_names)),trait_names)
+plt.xticks(np.arange(len(clm_names)),clm_names,rotation=90)
+# plt.title('Correlation')
+
 # %% PCA
 S = np.dot(Yc.T,Yc)
 w, v = linalg.eig(S)
