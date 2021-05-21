@@ -94,7 +94,7 @@ J = (OB.kai2*PAR+Jmax-np.sqrt((OB.kai2*PAR+Jmax)**2-4*OB.kai1*OB.kai2*PAR*Jmax))
 # Terms in Penman-Monteith Equation
 VPD_kPa = VPD*Psurf
 sV = 0.04145*np.exp(0.06088*T_C) #in Kpa
-RNg = np.array(RNET*np.exp(-LAI*VegK))
+RNg = np.array(RNET*np.exp(-LAI*VegK)) # RNg is the net radiation on the ground surface; RNET-RNg is the net radiation on the leaf surface
 petVnum = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60  #kg/s/m2/CONST.lambda0*60*60
 petVnumB = 1.26*(sV*RNg)/(sV+CONST.gammaV)/CONST.lambda0*60*60 
 
