@@ -126,10 +126,10 @@ class Constants:
         self.hc = 2e-25 # Planck constant times light speed, J*s times m/s
         self.wavelen = 500e-9 # wavelength of light, m
         self.Ephoton = self.hc/self.wavelen
-        self.ca = 400 # Atmospheric Co2 concentration, ppm
+        self.ca = 400 # Atmospheric CO2 concentration, ppm
         self.Cpmol = 1005*28.97*1e-3 # J/kg/K*kg/mol -> J/mol/K
-        self.lambda0 = 2.26*10**6
-        self.gammaV = 100*1005/(self.lambda0*0.622) #in kpa, constant in PM equation
+        self.lambda0 = 2.26*10**6 # heat of vaporization of water, J/kg
+        self.gammaV = 100*1005/(self.lambda0*0.622) #in kPa/K, constant in PM equation
         self.a0 = 1.6 # relative diffusivity of h2o to co2 through stomata
         self.U3 = 273.15
 
