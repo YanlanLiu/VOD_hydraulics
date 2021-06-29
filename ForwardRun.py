@@ -91,10 +91,10 @@ for fid in range(arrayid*nsites_per_id,(arrayid+1)*nsites_per_id):
     
     # Terms in Penman-Monteith Equation
     VPD_kPa = VPD*Psurf
-    sV = 0.04145*np.exp(0.06088*T_C) #in Kpa
+    sV = 0.04145*np.exp(0.06088*T_C) #in KPa/K
     RNg = np.array(RNET*np.exp(-LAI*VegK))
-    petVnum = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60  #kg/s/m2/CONST.lambda0*60*60
-    petVnumB = 1.26*(sV*RNg)/(sV+CONST.gammaV)/CONST.lambda0*60*60 
+    petVnum = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60  #kg/s/m2/CONST.lambda0*60*60 -> kPa/K times mm/hr
+    petVnumB = 1.26*(sV*RNg)/(sV+CONST.gammaV)/CONST.lambda0*60*60 # mm/hr
     
     PET = (sV*(RNET-RNg)+1.225*1000*VPD_kPa*GA)*(RNET>0)/CONST.lambda0*60*60/(sV+CONST.gammaV*(1+GA*RSlist[SiteInfo['IGBP'].iloc[fid]]))*24 # mm/day
     
