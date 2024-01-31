@@ -21,7 +21,7 @@ def LatLon_r(lat,lon,dd=0.25,lat0=90,lon0=-180):
 
 def interpolate_nan(A):
     nanfilter = ~np.isnan(A)
-    np.interp(np.arange(len(A)),np.where(nanfilter)[0],A[nanfilter])
+    A = np.interp(np.arange(len(A)),np.where(nanfilter)[0],A[nanfilter])
     if np.isnan(sum(A)):
         idx = np.where(nanfilter)[0]
         A[:idx[0]]= A[idx[0]]
