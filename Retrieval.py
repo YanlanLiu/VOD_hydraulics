@@ -179,8 +179,8 @@ def runhh_2soil_hydro(theta):
               
         p1 = phi0_mm*(s1/n)**(-bexp) + m1
         p2 = phi0_mm*(s2/n)**(-bexp) + m2
-        k1 = ksoil*(s1/n)**(2*bexp)
-        k2 = ksoil*(s2/n)**(2*bexp)
+        k1 = ksoil*(s1/n)**(2*bexp+3)
+        k2 = ksoil*(s2/n)**(2*bexp+3)
         f12 = 2/(1/k1+1/k2) * (p1-p2) / (m1-m2)*dt
         f23 = 2/(1/k2+1/k3) * (p2-p3) / (m2-m3)*dt
         s1 = max(s1-f12/d1,0.05)
